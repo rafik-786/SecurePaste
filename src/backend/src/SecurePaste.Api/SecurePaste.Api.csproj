@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="..\SecurePaste.SharedKernel\SecurePaste.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\SecurePaste.Modules.Pastes\SecurePaste.Modules.Pastes.csproj" />
+  </ItemGroup>
+</Project>
