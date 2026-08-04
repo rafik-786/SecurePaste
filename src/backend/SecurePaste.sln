@@ -1,0 +1,67 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C918F418-E23C-453D-BBC8-CCE0368C5EF7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.SharedKernel", "src\SecurePaste.SharedKernel\SecurePaste.SharedKernel.csproj", "{BDBCD83D-E986-47E9-888B-FE2F57417911}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.Api", "src\SecurePaste.Api\SecurePaste.Api.csproj", "{53BB6BBF-36F9-4FA4-A809-82C512494E8F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{C5BCEC02-D428-4B7B-9574-9CEE17D229D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.Modules.Pastes", "src\Modules\SecurePaste.Modules.Pastes\SecurePaste.Modules.Pastes.csproj", "{D9C3991D-A92A-441C-9268-C7FBE1FA05E3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{180AC1BD-65EE-4025-9AE2-2B65656C2C4D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.SharedKernel.Tests", "tests\SecurePaste.SharedKernel.Tests\SecurePaste.SharedKernel.Tests.csproj", "{3B50F3B1-AF8C-46C5-A709-7F572CB2E4E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.ArchitectureTests", "tests\SecurePaste.ArchitectureTests\SecurePaste.ArchitectureTests.csproj", "{478CC312-0D66-40E3-8FA0-464FD132D0CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.IntegrationTests", "tests\SecurePaste.IntegrationTests\SecurePaste.IntegrationTests.csproj", "{49C754C0-9550-42E2-BDEC-1FC3226CE25D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BDBCD83D-E986-47E9-888B-FE2F57417911}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDBCD83D-E986-47E9-888B-FE2F57417911}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDBCD83D-E986-47E9-888B-FE2F57417911}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDBCD83D-E986-47E9-888B-FE2F57417911}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53BB6BBF-36F9-4FA4-A809-82C512494E8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53BB6BBF-36F9-4FA4-A809-82C512494E8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53BB6BBF-36F9-4FA4-A809-82C512494E8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53BB6BBF-36F9-4FA4-A809-82C512494E8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9C3991D-A92A-441C-9268-C7FBE1FA05E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9C3991D-A92A-441C-9268-C7FBE1FA05E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9C3991D-A92A-441C-9268-C7FBE1FA05E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9C3991D-A92A-441C-9268-C7FBE1FA05E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B50F3B1-AF8C-46C5-A709-7F572CB2E4E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B50F3B1-AF8C-46C5-A709-7F572CB2E4E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B50F3B1-AF8C-46C5-A709-7F572CB2E4E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B50F3B1-AF8C-46C5-A709-7F572CB2E4E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{478CC312-0D66-40E3-8FA0-464FD132D0CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{478CC312-0D66-40E3-8FA0-464FD132D0CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{478CC312-0D66-40E3-8FA0-464FD132D0CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{478CC312-0D66-40E3-8FA0-464FD132D0CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49C754C0-9550-42E2-BDEC-1FC3226CE25D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49C754C0-9550-42E2-BDEC-1FC3226CE25D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49C754C0-9550-42E2-BDEC-1FC3226CE25D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49C754C0-9550-42E2-BDEC-1FC3226CE25D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BDBCD83D-E986-47E9-888B-FE2F57417911} = {C918F418-E23C-453D-BBC8-CCE0368C5EF7}
+		{53BB6BBF-36F9-4FA4-A809-82C512494E8F} = {C918F418-E23C-453D-BBC8-CCE0368C5EF7}
+		{C5BCEC02-D428-4B7B-9574-9CEE17D229D6} = {C918F418-E23C-453D-BBC8-CCE0368C5EF7}
+		{D9C3991D-A92A-441C-9268-C7FBE1FA05E3} = {C5BCEC02-D428-4B7B-9574-9CEE17D229D6}
+		{3B50F3B1-AF8C-46C5-A709-7F572CB2E4E6} = {180AC1BD-65EE-4025-9AE2-2B65656C2C4D}
+		{478CC312-0D66-40E3-8FA0-464FD132D0CE} = {180AC1BD-65EE-4025-9AE2-2B65656C2C4D}
+		{49C754C0-9550-42E2-BDEC-1FC3226CE25D} = {180AC1BD-65EE-4025-9AE2-2B65656C2C4D}
+	EndGlobalSection
+EndGlobal
