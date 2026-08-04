@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.ArchitectureTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.IntegrationTests", "tests\SecurePaste.IntegrationTests\SecurePaste.IntegrationTests.csproj", "{49C754C0-9550-42E2-BDEC-1FC3226CE25D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecurePaste.Modules.Pastes.Tests", "tests\SecurePaste.Modules.Pastes.Tests\SecurePaste.Modules.Pastes.Tests.csproj", "{28FB110F-AA4D-46B0-A4EF-CE0618D3BBDC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,6 +56,10 @@ Global
 		{49C754C0-9550-42E2-BDEC-1FC3226CE25D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{49C754C0-9550-42E2-BDEC-1FC3226CE25D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{49C754C0-9550-42E2-BDEC-1FC3226CE25D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28FB110F-AA4D-46B0-A4EF-CE0618D3BBDC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28FB110F-AA4D-46B0-A4EF-CE0618D3BBDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28FB110F-AA4D-46B0-A4EF-CE0618D3BBDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28FB110F-AA4D-46B0-A4EF-CE0618D3BBDC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{BDBCD83D-E986-47E9-888B-FE2F57417911} = {C918F418-E23C-453D-BBC8-CCE0368C5EF7}
@@ -63,5 +69,6 @@ Global
 		{3B50F3B1-AF8C-46C5-A709-7F572CB2E4E6} = {180AC1BD-65EE-4025-9AE2-2B65656C2C4D}
 		{478CC312-0D66-40E3-8FA0-464FD132D0CE} = {180AC1BD-65EE-4025-9AE2-2B65656C2C4D}
 		{49C754C0-9550-42E2-BDEC-1FC3226CE25D} = {180AC1BD-65EE-4025-9AE2-2B65656C2C4D}
+		{28FB110F-AA4D-46B0-A4EF-CE0618D3BBDC} = {180AC1BD-65EE-4025-9AE2-2B65656C2C4D}
 	EndGlobalSection
 EndGlobal
