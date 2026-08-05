@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SecurePaste.Modules.Pastes.Application;
 using SecurePaste.Modules.Pastes.Domain;
 
-namespace SecurePaste.Modules.Pastes.Infrastructure;
+namespace SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
 internal sealed class PasteStore(PastesDbContext dbContext) : IPasteStore
 {

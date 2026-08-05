@@ -2,8 +2,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
-namespace SecurePaste.Modules.Pastes.Infrastructure;
+namespace SecurePaste.Modules.Pastes.Infrastructure.Sweeping;
 
 internal sealed class ExpiredPasteSweeper(
     IServiceScopeFactory scopeFactory,

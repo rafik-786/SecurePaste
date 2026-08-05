@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SecurePaste.Modules.Pastes.Domain;
 
-namespace SecurePaste.Modules.Pastes.Infrastructure;
+namespace SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
 public sealed class PastesDbContext(DbContextOptions<PastesDbContext> options) : DbContext(options)
 {

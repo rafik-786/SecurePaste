@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using SecurePaste.Modules.Pastes;
-using SecurePaste.Modules.Pastes.Infrastructure;
+using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
