@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using SecurePaste.Modules.Pastes;
 
-namespace SecurePaste.IntegrationTests;
+namespace SecurePaste.IntegrationTests.Api;
 
 [Collection("postgres")]
 public class ReadinessTests(PostgresFixture fixture)

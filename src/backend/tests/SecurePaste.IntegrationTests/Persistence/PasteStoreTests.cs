@@ -3,7 +3,7 @@ using Npgsql;
 using SecurePaste.Modules.Pastes.Domain;
 using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
-namespace SecurePaste.IntegrationTests;
+namespace SecurePaste.IntegrationTests.Persistence;
 
 [Collection("postgres")]
 public class PasteStoreTests(PostgresFixture fixture)
