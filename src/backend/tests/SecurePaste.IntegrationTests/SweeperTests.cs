@@ -29,9 +29,12 @@ public class SweeperTests(PostgresFixture fixture)
 
         var swept = await PasteSweeper.SweepAsync(context, batchSize: 2, CancellationToken.None);
 
-        Assert.True(swept >= 3);
+        swept.Should().BeGreaterThanOrEqualTo(3);
         var store = new PasteStore(context);
-        Assert.True(await store.ExistsAsync(live.Id, CancellationToken.None));
-        Assert.Equal(0, await PasteSweeper.SweepAsync(context, batchSize: 2, CancellationToken.None));
+        var liveSurvives = await store.ExistsAsync(live.Id, CancellationToken.None);
+        liveSurvives.Should().BeTrue();
+
+        var secondSweep = await PasteSweeper.SweepAsync(context, batchSize: 2, CancellationToken.None);
+        secondSweep.Should().Be(0);
     }
 }

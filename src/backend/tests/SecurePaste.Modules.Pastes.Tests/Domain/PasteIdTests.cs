@@ -11,8 +11,8 @@ public class PasteIdTests
         {
             var id = PasteId.New();
 
-            Assert.Equal(PasteId.Length, id.Value.Length);
-            Assert.All(id.Value, c => Assert.Contains(c, PasteId.Alphabet));
+            id.Value.Should().HaveLength(PasteId.Length);
+            id.Value.ToCharArray().Should().OnlyContain(c => PasteId.Alphabet.Contains(c));
         }
     }
 
@@ -21,14 +21,14 @@ public class PasteIdTests
     {
         var ids = Enumerable.Range(0, 1000).Select(_ => PasteId.New().Value).ToHashSet();
 
-        Assert.Equal(1000, ids.Count);
+        ids.Should().HaveCount(1000);
     }
 
     [Fact]
     public void TryParse_accepts_a_valid_id()
     {
-        Assert.True(PasteId.TryParse("abcdefgh2345", out var id));
-        Assert.Equal("abcdefgh2345", id.Value);
+        PasteId.TryParse("abcdefgh2345", out var id).Should().BeTrue();
+        id.Value.Should().Be("abcdefgh2345");
     }
 
     [Theory]
@@ -43,6 +43,6 @@ public class PasteIdTests
     [InlineData("ABCDEFGH2345")]
     public void TryParse_rejects_invalid_input(string? candidate)
     {
-        Assert.False(PasteId.TryParse(candidate, out _));
+        PasteId.TryParse(candidate, out _).Should().BeFalse();
     }
 }

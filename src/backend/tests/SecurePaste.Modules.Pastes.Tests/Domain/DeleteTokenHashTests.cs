@@ -12,7 +12,7 @@ public class DeleteTokenHashTests
 
         var hash = DeleteTokenHash.FromToken(token);
 
-        Assert.True(hash.Matches(token));
+        hash.Matches(token).Should().BeTrue();
     }
 
     [Fact]
@@ -20,7 +20,7 @@ public class DeleteTokenHashTests
     {
         var hash = DeleteTokenHash.FromToken(RandomNumberGenerator.GetBytes(32));
 
-        Assert.False(hash.Matches(RandomNumberGenerator.GetBytes(32)));
+        hash.Matches(RandomNumberGenerator.GetBytes(32)).Should().BeFalse();
     }
 
     [Fact]
@@ -31,12 +31,14 @@ public class DeleteTokenHashTests
 
         var restored = DeleteTokenHash.FromHash(original.ToByteArray());
 
-        Assert.True(restored.Matches(token));
+        restored.Matches(token).Should().BeTrue();
     }
 
     [Fact]
     public void A_hash_must_be_exactly_32_bytes()
     {
-        Assert.Throws<ArgumentException>(() => DeleteTokenHash.FromHash(new byte[16]));
+        var act = () => DeleteTokenHash.FromHash(new byte[16]);
+
+        act.Should().Throw<ArgumentException>();
     }
 }

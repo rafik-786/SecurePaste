@@ -11,8 +11,8 @@ public class Base64UrlTests
 
         var encoded = Base64Url.Encode(bytes);
 
-        Assert.True(Base64Url.TryDecode(encoded, out var decoded));
-        Assert.Equal(bytes, decoded);
+        Base64Url.TryDecode(encoded, out var decoded).Should().BeTrue();
+        decoded.Should().Equal(bytes);
     }
 
     [Fact]
@@ -22,9 +22,9 @@ public class Base64UrlTests
         {
             var encoded = Base64Url.Encode(RandomNumberGenerator.GetBytes(33));
 
-            Assert.DoesNotContain('+', encoded);
-            Assert.DoesNotContain('/', encoded);
-            Assert.DoesNotContain('=', encoded);
+            encoded.Should().NotContain("+");
+            encoded.Should().NotContain("/");
+            encoded.Should().NotContain("=");
         }
     }
 
@@ -35,6 +35,6 @@ public class Base64UrlTests
     [InlineData("abcde")]
     public void Invalid_input_is_rejected(string? encoded)
     {
-        Assert.False(Base64Url.TryDecode(encoded, out _));
+        Base64Url.TryDecode(encoded, out _).Should().BeFalse();
     }
 }

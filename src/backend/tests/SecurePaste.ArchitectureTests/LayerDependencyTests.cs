@@ -24,7 +24,7 @@ public class LayerDependencyTests
                 "Microsoft.AspNetCore")
             .GetResult();
 
-        Assert.True(result.IsSuccessful, FailingTypes(result));
+        result.IsSuccessful.Should().BeTrue(FailingTypes(result));
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class LayerDependencyTests
                 "Microsoft.AspNetCore")
             .GetResult();
 
-        Assert.True(result.IsSuccessful, FailingTypes(result));
+        result.IsSuccessful.Should().BeTrue(FailingTypes(result));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class LayerDependencyTests
                 "Microsoft.EntityFrameworkCore")
             .GetResult();
 
-        Assert.True(result.IsSuccessful, FailingTypes(result));
+        result.IsSuccessful.Should().BeTrue(FailingTypes(result));
     }
 
     private static string FailingTypes(TestResult result) =>

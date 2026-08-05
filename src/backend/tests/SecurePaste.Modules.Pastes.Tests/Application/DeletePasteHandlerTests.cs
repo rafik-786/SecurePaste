@@ -13,9 +13,9 @@ public class DeletePasteHandlerTests
 
         var result = await _bed.Delete.HandleAsync(created.Id, created.DeleteToken, CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
         var peek = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
-        Assert.Equal(ErrorType.Gone, peek.Error!.Type);
+        peek.Error!.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public class DeletePasteHandlerTests
 
         var second = await _bed.Delete.HandleAsync(created.Id, created.DeleteToken, CancellationToken.None);
 
-        Assert.Equal(ErrorType.Gone, second.Error!.Type);
+        second.Error!.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -37,9 +37,9 @@ public class DeletePasteHandlerTests
 
         var result = await _bed.Delete.HandleAsync(created.Id, other.DeleteToken, CancellationToken.None);
 
-        Assert.Equal(ErrorType.Forbidden, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.Forbidden);
         var peek = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
-        Assert.True(peek.IsSuccess);
+        peek.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class DeletePasteHandlerTests
 
         var result = await _bed.Delete.HandleAsync(created.Id, "###not-base64url###", CancellationToken.None);
 
-        Assert.Equal(ErrorType.Forbidden, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.Forbidden);
     }
 
     [Fact]
@@ -57,6 +57,6 @@ public class DeletePasteHandlerTests
     {
         var result = await _bed.Delete.HandleAsync("abcdefgh2345", "any", CancellationToken.None);
 
-        Assert.Equal(ErrorType.NotFound, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.NotFound);
     }
 }

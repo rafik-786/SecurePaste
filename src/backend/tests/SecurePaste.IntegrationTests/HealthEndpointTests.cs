@@ -12,6 +12,6 @@ public class HealthEndpointTests(WebApplicationFactory<Program> factory) : IClas
 
         var response = await client.GetAsync("/healthz");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

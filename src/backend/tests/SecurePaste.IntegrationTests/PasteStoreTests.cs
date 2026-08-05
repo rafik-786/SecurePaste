@@ -31,10 +31,11 @@ public class PasteStoreTests(PostgresFixture fixture)
             new PasteStore(contextA).ClaimViewAsync(paste.Id, CancellationToken.None),
             new PasteStore(contextB).ClaimViewAsync(paste.Id, CancellationToken.None));
 
-        Assert.Single(results, r => r is not null);
+        results.Should().ContainSingle(r => r != null);
 
         await using var check = fixture.CreateContext();
-        Assert.True(await new PasteStore(check).ExistsAsync(paste.Id, CancellationToken.None));
+        var stillExists = await new PasteStore(check).ExistsAsync(paste.Id, CancellationToken.None);
+        stillExists.Should().BeTrue();
     }
 
     [Fact]
@@ -47,15 +48,15 @@ public class PasteStoreTests(PostgresFixture fixture)
 
         var claimed = await store.ClaimViewAsync(paste.Id, CancellationToken.None);
 
-        Assert.NotNull(claimed);
-        Assert.Equal([1, 2, 3, 4], claimed.Ciphertext);
-        Assert.Equal(0, claimed.RemainingViews);
+        claimed.Should().NotBeNull();
+        claimed!.Ciphertext.Should().Equal(1, 2, 3, 4);
+        claimed.RemainingViews.Should().Be(0);
 
         await using var verify = fixture.CreateContext();
         var stored = await new PasteStore(verify).GetAsync(paste.Id, CancellationToken.None);
-        Assert.NotNull(stored);
-        Assert.Null(stored.Ciphertext);
-        Assert.NotNull(stored.DestroyedAt);
+        stored.Should().NotBeNull();
+        stored!.Ciphertext.Should().BeNull();
+        stored.DestroyedAt.Should().NotBeNull();
     }
 
     [Fact]
@@ -76,8 +77,11 @@ public class PasteStoreTests(PostgresFixture fixture)
         await context.SaveChangesAsync();
 
         var store = new PasteStore(context);
-        Assert.Null(await store.ClaimViewAsync(expired.Id, CancellationToken.None));
-        Assert.True(await store.ExistsAsync(expired.Id, CancellationToken.None));
+        var claimed = await store.ClaimViewAsync(expired.Id, CancellationToken.None);
+        var exists = await store.ExistsAsync(expired.Id, CancellationToken.None);
+
+        claimed.Should().BeNull();
+        exists.Should().BeTrue();
     }
 
     [Fact]
@@ -88,8 +92,11 @@ public class PasteStoreTests(PostgresFixture fixture)
         var store = new PasteStore(context);
         await store.AddAsync(paste, CancellationToken.None);
 
-        Assert.True(await store.TombstoneAsync(paste.Id, CancellationToken.None));
-        Assert.False(await store.TombstoneAsync(paste.Id, CancellationToken.None));
+        var first = await store.TombstoneAsync(paste.Id, CancellationToken.None);
+        var second = await store.TombstoneAsync(paste.Id, CancellationToken.None);
+
+        first.Should().BeTrue();
+        second.Should().BeFalse();
     }
 
     [Fact]
@@ -100,10 +107,9 @@ public class PasteStoreTests(PostgresFixture fixture)
         var store = new PasteStore(context);
         await store.AddAsync(paste, CancellationToken.None);
 
-        var violation = await Assert.ThrowsAsync<PostgresException>(() =>
-            context.Database.ExecuteSqlAsync(
-                $"UPDATE pastes.pastes SET ciphertext = NULL WHERE id = {paste.Id.Value}"));
+        Func<Task> act = () => context.Database.ExecuteSqlAsync(
+            $"UPDATE pastes.pastes SET ciphertext = NULL WHERE id = {paste.Id.Value}");
 
-        Assert.Equal("23514", violation.SqlState);
+        (await act.Should().ThrowAsync<PostgresException>()).Which.SqlState.Should().Be("23514");
     }
 }
