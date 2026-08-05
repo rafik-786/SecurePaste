@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
-namespace SecurePaste.Modules.Pastes.Infrastructure;
+namespace SecurePaste.Modules.Pastes.Infrastructure.Sweeping;
 
 internal static class PasteSweeper
 {

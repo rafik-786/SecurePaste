@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace SecurePaste.Modules.Pastes.Infrastructure;
+namespace SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
 internal sealed class PastesDbContextFactory : IDesignTimeDbContextFactory<PastesDbContext>
 {

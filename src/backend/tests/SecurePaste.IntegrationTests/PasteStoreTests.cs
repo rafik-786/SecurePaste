@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using SecurePaste.Modules.Pastes.Domain;
-using SecurePaste.Modules.Pastes.Infrastructure;
+using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
 namespace SecurePaste.IntegrationTests;
 

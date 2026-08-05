@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SecurePaste.Modules.Pastes.Domain;
 
-namespace SecurePaste.Modules.Pastes.Infrastructure;
+namespace SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 
 internal sealed class PasteEntityConfiguration : IEntityTypeConfiguration<Paste>
 {

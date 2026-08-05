@@ -2,7 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SecurePaste.Modules.Pastes.Application;
-using SecurePaste.Modules.Pastes.Infrastructure;
+using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
+using SecurePaste.Modules.Pastes.Infrastructure.Sweeping;
 
 namespace SecurePaste.Modules.Pastes;
 

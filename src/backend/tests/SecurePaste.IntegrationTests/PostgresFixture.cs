@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using SecurePaste.Modules.Pastes.Infrastructure;
+using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 using Testcontainers.PostgreSql;
 
 namespace SecurePaste.IntegrationTests;

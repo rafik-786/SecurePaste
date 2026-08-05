@@ -1,4 +1,4 @@
-namespace SecurePaste.Modules.Pastes.Infrastructure;
+namespace SecurePaste.Modules.Pastes.Infrastructure.Sweeping;
 
 public sealed class SweeperOptions
 {
