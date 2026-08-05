@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace SecurePaste.IntegrationTests;
 
-public class HealthEndpointTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
 {
     [Fact]
     public async Task Healthz_returns_200()
@@ -13,6 +12,6 @@ public class HealthEndpointTests(WebApplicationFactory<Program> factory)
 
         var response = await client.GetAsync("/healthz");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

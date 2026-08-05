@@ -14,10 +14,10 @@ public class PeekPasteHandlerTests
         var first = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
         var second = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
 
-        Assert.True(first.IsSuccess);
-        Assert.Equal(2, first.Value.RemainingViews);
-        Assert.Equal(4, first.Value.SizeBytes);
-        Assert.Equal(2, second.Value.RemainingViews);
+        first.IsSuccess.Should().BeTrue();
+        first.Value.RemainingViews.Should().Be(2);
+        first.Value.SizeBytes.Should().Be(4);
+        second.Value.RemainingViews.Should().Be(2);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class PeekPasteHandlerTests
     {
         var result = await _bed.Peek.HandleAsync("abcdefgh2345", CancellationToken.None);
 
-        Assert.Equal(ErrorType.NotFound, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.NotFound);
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public class PeekPasteHandlerTests
     {
         var result = await _bed.Peek.HandleAsync("not-a-valid-id!", CancellationToken.None);
 
-        Assert.Equal(ErrorType.NotFound, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.NotFound);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class PeekPasteHandlerTests
         _bed.Clock.Advance(TimeSpan.FromMinutes(5));
         var result = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
 
-        Assert.Equal(ErrorType.Gone, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -55,6 +55,6 @@ public class PeekPasteHandlerTests
 
         var result = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
 
-        Assert.Equal(ErrorType.Gone, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.Gone);
     }
 }

@@ -1,3 +1,4 @@
+using SecurePaste.Modules.Pastes.Domain;
 using SecurePaste.SharedKernel;
 
 namespace SecurePaste.Modules.Pastes.Tests.Application;
@@ -14,10 +15,10 @@ public class ClaimViewHandlerTests
         var first = await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
         var second = await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
 
-        Assert.True(first.IsSuccess);
-        Assert.Equal([1, 2, 3, 4], first.Value.Ciphertext);
-        Assert.Null(first.Value.RemainingViews);
-        Assert.True(second.IsSuccess);
+        first.IsSuccess.Should().BeTrue();
+        first.Value.Ciphertext.Should().Equal(1, 2, 3, 4);
+        first.Value.RemainingViews.Should().BeNull();
+        second.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -29,9 +30,9 @@ public class ClaimViewHandlerTests
         var second = await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
         var third = await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
 
-        Assert.Equal(1, first.Value.RemainingViews);
-        Assert.Equal(0, second.Value.RemainingViews);
-        Assert.Equal(ErrorType.Gone, third.Error!.Type);
+        first.Value.RemainingViews.Should().Be(1);
+        second.Value.RemainingViews.Should().Be(0);
+        third.Error!.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -41,11 +42,11 @@ public class ClaimViewHandlerTests
 
         await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
 
-        Assert.True(SecurePaste.Modules.Pastes.Domain.PasteId.TryParse(created.Id, out var id));
+        PasteId.TryParse(created.Id, out var id).Should().BeTrue();
         var stored = await _bed.Store.GetAsync(id, CancellationToken.None);
-        Assert.NotNull(stored);
-        Assert.Null(stored.Ciphertext);
-        Assert.NotNull(stored.DestroyedAt);
+        stored.Should().NotBeNull();
+        stored!.Ciphertext.Should().BeNull();
+        stored.DestroyedAt.Should().NotBeNull();
     }
 
     [Fact]
@@ -56,7 +57,7 @@ public class ClaimViewHandlerTests
 
         var result = await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
 
-        Assert.Equal(ErrorType.Gone, result.Error!.Type);
+        result.Error!.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -65,7 +66,7 @@ public class ClaimViewHandlerTests
         var unknown = await _bed.Claim.HandleAsync("abcdefgh2345", CancellationToken.None);
         var malformed = await _bed.Claim.HandleAsync("!!!", CancellationToken.None);
 
-        Assert.Equal(ErrorType.NotFound, unknown.Error!.Type);
-        Assert.Equal(ErrorType.NotFound, malformed.Error!.Type);
+        unknown.Error!.Type.Should().Be(ErrorType.NotFound);
+        malformed.Error!.Type.Should().Be(ErrorType.NotFound);
     }
 }

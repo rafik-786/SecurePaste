@@ -7,9 +7,9 @@ public class ResultTests
     {
         var result = Result.Success();
 
-        Assert.True(result.IsSuccess);
-        Assert.False(result.IsFailure);
-        Assert.Null(result.Error);
+        result.IsSuccess.Should().BeTrue();
+        result.IsFailure.Should().BeFalse();
+        result.Error.Should().BeNull();
     }
 
     [Fact]
@@ -19,8 +19,8 @@ public class ResultTests
 
         var result = Result.Failure(error);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(error, result.Error);
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(error);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class ResultTests
     {
         var result = Result.Success(42);
 
-        Assert.Equal(42, result.Value);
+        result.Value.Should().Be(42);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public class ResultTests
     {
         var result = Result.Failure<int>(Error.Validation("Paste.Validation", "Bad input."));
 
-        Assert.Throws<InvalidOperationException>(() => result.Value);
+        result.Invoking(r => r.Value).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -44,8 +44,8 @@ public class ResultTests
     {
         Result<string> result = "hello";
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal("hello", result.Value);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().Be("hello");
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public class ResultTests
     {
         Result<string> result = Error.Gone("Paste.Gone", "Expired.");
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Gone, result.Error!.Type);
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Type.Should().Be(ErrorType.Gone);
     }
 }

@@ -13,12 +13,12 @@ public class CreatePasteHandlerTests
     {
         var response = await _bed.CreatePasteAsync(maxViews: 3);
 
-        Assert.Equal(PasteId.Length, response.Id.Length);
-        Assert.Equal(_bed.Clock.GetUtcNow().AddHours(1), response.ExpiresAt);
+        response.Id.Should().HaveLength(PasteId.Length);
+        response.ExpiresAt.Should().Be(_bed.Clock.GetUtcNow().AddHours(1));
 
         var peek = await _bed.Peek.HandleAsync(response.Id, CancellationToken.None);
-        Assert.True(peek.IsSuccess);
-        Assert.Equal(3, peek.Value.RemainingViews);
+        peek.IsSuccess.Should().BeTrue();
+        peek.Value.RemainingViews.Should().Be(3);
     }
 
     [Fact]
@@ -26,12 +26,12 @@ public class CreatePasteHandlerTests
     {
         var response = await _bed.CreatePasteAsync();
 
-        Assert.True(Base64Url.TryDecode(response.DeleteToken, out var token));
-        Assert.Equal(PasteLimits.DeleteTokenBytes, token.Length);
+        Base64Url.TryDecode(response.DeleteToken, out var token).Should().BeTrue();
+        token.Should().HaveCount(PasteLimits.DeleteTokenBytes);
 
-        Assert.True(PasteId.TryParse(response.Id, out var id));
+        PasteId.TryParse(response.Id, out var id).Should().BeTrue();
         var stored = await _bed.Store.GetAsync(id, CancellationToken.None);
-        Assert.True(stored!.DeleteTokenHash.Matches(token));
+        stored!.DeleteTokenHash.Matches(token).Should().BeTrue();
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class CreatePasteHandlerTests
 
         var result = await _bed.Create.HandleAsync(command, CancellationToken.None);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Validation, result.Error!.Type);
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Type.Should().Be(ErrorType.Validation);
     }
 }

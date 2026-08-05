@@ -3,15 +3,19 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\SecurePaste.Api\SecurePaste.Api.csproj" />
+    <ProjectReference Include="..\..\src\Modules\SecurePaste.Modules.Pastes\SecurePaste.Modules.Pastes.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="FluentAssertions" />
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

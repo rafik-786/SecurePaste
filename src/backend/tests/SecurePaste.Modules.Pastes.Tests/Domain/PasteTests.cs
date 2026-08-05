@@ -31,15 +31,15 @@ public class PasteTests
 
         var result = Create(clock, maxViews: 3);
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
         var paste = result.Value;
-        Assert.Equal(PasteId.Length, paste.Id.Value.Length);
-        Assert.Equal(Start, paste.CreatedAt);
-        Assert.Equal(Start.AddHours(1), paste.ExpiresAt);
-        Assert.Equal(0, paste.ViewsUsed);
-        Assert.Equal(3, paste.RemainingViews);
-        Assert.Null(paste.DestroyedAt);
-        Assert.False(paste.IsGone(clock.GetUtcNow()));
+        paste.Id.Value.Should().HaveLength(PasteId.Length);
+        paste.CreatedAt.Should().Be(Start);
+        paste.ExpiresAt.Should().Be(Start.AddHours(1));
+        paste.ViewsUsed.Should().Be(0);
+        paste.RemainingViews.Should().Be(3);
+        paste.DestroyedAt.Should().BeNull();
+        paste.IsGone(clock.GetUtcNow()).Should().BeFalse();
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public class PasteTests
     {
         var paste = Create(Clock()).Value;
 
-        Assert.Null(paste.MaxViews);
-        Assert.Null(paste.RemainingViews);
+        paste.MaxViews.Should().BeNull();
+        paste.RemainingViews.Should().BeNull();
     }
 
     [Fact]
@@ -56,8 +56,8 @@ public class PasteTests
     {
         var result = Create(Clock(), ciphertext: []);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Validation, result.Error!.Type);
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Type.Should().Be(ErrorType.Validation);
     }
 
     [Fact]
@@ -65,8 +65,8 @@ public class PasteTests
     {
         var result = Create(Clock(), ciphertext: new byte[PasteLimits.MaxCiphertextBytes + 1]);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.TooLarge, result.Error!.Type);
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Type.Should().Be(ErrorType.TooLarge);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class PasteTests
     {
         var result = Create(Clock(), ciphertext: new byte[PasteLimits.MaxCiphertextBytes]);
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Theory]
@@ -84,8 +84,8 @@ public class PasteTests
     {
         var result = Create(Clock(), expiresIn: TimeSpan.FromSeconds(seconds));
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Validation, result.Error!.Type);
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Type.Should().Be(ErrorType.Validation);
     }
 
     [Theory]
@@ -95,7 +95,7 @@ public class PasteTests
     {
         var result = Create(Clock(), expiresIn: TimeSpan.FromSeconds(seconds));
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Theory]
@@ -106,8 +106,8 @@ public class PasteTests
     {
         var result = Create(Clock(), maxViews: maxViews);
 
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Validation, result.Error!.Type);
+        result.IsFailure.Should().BeTrue();
+        result.Error!.Type.Should().Be(ErrorType.Validation);
     }
 
     [Theory]
@@ -117,7 +117,7 @@ public class PasteTests
     {
         var result = Create(Clock(), maxViews: maxViews);
 
-        Assert.True(result.IsSuccess);
+        result.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class PasteTests
 
         clock.Advance(TimeSpan.FromHours(1));
 
-        Assert.True(paste.IsGone(clock.GetUtcNow()));
+        paste.IsGone(clock.GetUtcNow()).Should().BeTrue();
     }
 
     [Fact]
@@ -136,8 +136,8 @@ public class PasteTests
     {
         var paste = Rehydrated(viewsUsed: 1, maxViews: 1);
 
-        Assert.True(paste.IsGone(Start));
-        Assert.Equal(0, paste.RemainingViews);
+        paste.IsGone(Start).Should().BeTrue();
+        paste.RemainingViews.Should().Be(0);
     }
 
     [Fact]
@@ -145,8 +145,8 @@ public class PasteTests
     {
         var paste = Rehydrated(destroyedAt: Start, ciphertext: null);
 
-        Assert.True(paste.IsGone(Start));
-        Assert.Null(paste.Ciphertext);
+        paste.IsGone(Start).Should().BeTrue();
+        paste.Ciphertext.Should().BeNull();
     }
 
     private static Paste Rehydrated(
