@@ -46,5 +46,7 @@ public readonly record struct PasteId
         return true;
     }
 
+    internal static PasteId FromTrusted(string value) => new(value);
+
     public override string ToString() => Value;
 }

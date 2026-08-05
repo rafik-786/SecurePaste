@@ -1,11 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\SecurePaste.SharedKernel\SecurePaste.SharedKernel.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="SecurePaste.Modules.Pastes.Tests" />
+    <InternalsVisibleTo Include="SecurePaste.IntegrationTests" />
   </ItemGroup>
 </Project>

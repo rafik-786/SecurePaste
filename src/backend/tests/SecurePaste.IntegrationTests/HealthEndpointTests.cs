@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace SecurePaste.IntegrationTests;
 
-public class HealthEndpointTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
 {
     [Fact]
     public async Task Healthz_returns_200()
