@@ -2,7 +2,7 @@ using SecurePaste.Modules.Pastes.Domain;
 using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
 using SecurePaste.Modules.Pastes.Infrastructure.Sweeping;
 
-namespace SecurePaste.IntegrationTests;
+namespace SecurePaste.IntegrationTests.Persistence;
 
 [Collection("postgres")]
 public class SweeperTests(PostgresFixture fixture)
