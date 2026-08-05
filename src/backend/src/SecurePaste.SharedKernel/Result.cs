@@ -35,8 +35,7 @@ public sealed class Result<T> : Result
 {
     private readonly T? _value;
 
-    internal Result(T? value, bool isSuccess, Error? error)
-        : base(isSuccess, error)
+    internal Result(T? value, bool isSuccess, Error? error) : base(isSuccess, error)
     {
         _value = value;
     }
@@ -49,3 +48,6 @@ public sealed class Result<T> : Result
 
     public static implicit operator Result<T>(Error error) => Failure<T>(error);
 }
+
+
+
