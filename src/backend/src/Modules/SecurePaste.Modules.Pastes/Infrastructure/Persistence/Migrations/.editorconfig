@@ -1,0 +1,4 @@
+[*.cs]
+generated_code = true
+charset = unset
+csharp_style_namespace_declarations = unset
