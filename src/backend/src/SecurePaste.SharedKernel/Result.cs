@@ -2,6 +2,8 @@ namespace SecurePaste.SharedKernel;
 
 public class Result
 {
+    private readonly Error? _error;
+
     protected Result(bool isSuccess, Error? error)
     {
         if (isSuccess == error is not null)
@@ -10,14 +12,15 @@ public class Result
         }
 
         IsSuccess = isSuccess;
-        Error = error;
+        _error = error;
     }
 
     public bool IsSuccess { get; }
 
     public bool IsFailure => !IsSuccess;
 
-    public Error? Error { get; }
+    public Error Error => _error
+        ?? throw new InvalidOperationException("Cannot read the error of a successful result.");
 
     public static Result Success() => new(true, null);
 

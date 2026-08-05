@@ -17,18 +17,18 @@ public sealed class DeletePasteHandler(IPasteStore store, TimeProvider clock)
             return Result.Failure(PasteErrors.WrongDeleteToken);
         }
 
-        var paste = await store.GetAsync(pasteId, cancellationToken);
-        if (paste is null)
+        var metadata = await store.GetMetadataAsync(pasteId, cancellationToken);
+        if (metadata is null)
         {
             return Result.Failure(PasteErrors.NotFound);
         }
 
-        if (paste.IsGone(clock.GetUtcNow()))
+        if (metadata.IsGone(clock.GetUtcNow()))
         {
             return Result.Failure(PasteErrors.Gone);
         }
 
-        if (!paste.DeleteTokenHash.Matches(token))
+        if (!metadata.DeleteTokenHash.Matches(token))
         {
             return Result.Failure(PasteErrors.WrongDeleteToken);
         }

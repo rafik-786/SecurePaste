@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SecurePaste.Api\SecurePaste.Api.csproj" />
     <ProjectReference Include="..\..\src\Modules\SecurePaste.Modules.Pastes\SecurePaste.Modules.Pastes.csproj" />
+    <ProjectReference Include="..\SecurePaste.Modules.Pastes.Tests\SecurePaste.Modules.Pastes.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="FluentAssertions" />

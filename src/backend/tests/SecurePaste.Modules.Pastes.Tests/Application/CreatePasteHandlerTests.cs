@@ -29,8 +29,7 @@ public class CreatePasteHandlerTests
         Base64Url.TryDecode(response.DeleteToken, out var token).Should().BeTrue();
         token.Should().HaveCount(PasteLimits.DeleteTokenBytes);
 
-        PasteId.TryParse(response.Id, out var id).Should().BeTrue();
-        var stored = await _bed.Store.GetAsync(id, CancellationToken.None);
+        var stored = _bed.Store.Inspect(response.Id);
         stored!.DeleteTokenHash.Matches(token).Should().BeTrue();
     }
 
@@ -42,6 +41,6 @@ public class CreatePasteHandlerTests
         var result = await _bed.Create.HandleAsync(command, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Type.Should().Be(ErrorType.Validation);
+        result.Error.Type.Should().Be(ErrorType.Validation);
     }
 }

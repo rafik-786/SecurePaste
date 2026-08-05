@@ -24,7 +24,7 @@ public sealed class CreatePasteHandler(IPasteStore store, TimeProvider clock)
 
         if (created.IsFailure)
         {
-            return created.Error!;
+            return created.Error;
         }
 
         var paste = created.Value;

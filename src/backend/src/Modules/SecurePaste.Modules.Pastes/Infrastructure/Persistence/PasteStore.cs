@@ -12,8 +12,17 @@ internal sealed class PasteStore(PastesDbContext dbContext) : IPasteStore
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<Paste?> GetAsync(PasteId id, CancellationToken cancellationToken) =>
-        await dbContext.Pastes.FindAsync([id], cancellationToken);
+    public Task<PasteMetadata?> GetMetadataAsync(PasteId id, CancellationToken cancellationToken) =>
+        dbContext.Pastes.AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => new PasteMetadata(
+                p.ExpiresAt,
+                p.MaxViews,
+                p.ViewsUsed,
+                p.DestroyedAt,
+                p.Ciphertext == null ? 0 : p.Ciphertext.Length,
+                p.DeleteTokenHash))
+            .FirstOrDefaultAsync(cancellationToken);
 
     public Task<bool> ExistsAsync(PasteId id, CancellationToken cancellationToken) =>
         dbContext.Pastes.AnyAsync(p => p.Id == id, cancellationToken);

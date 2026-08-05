@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using SecurePaste.Modules.Pastes.Application;
 using SecurePaste.Modules.Pastes.Domain;
+using SecurePaste.SharedKernel;
 
 namespace SecurePaste.Modules.Pastes.Endpoints;
 
@@ -32,7 +33,7 @@ public static class PasteEndpoints
         HttpContext context,
         CancellationToken cancellationToken)
     {
-        if (!TryDecodeBase64(request.Ciphertext, out var ciphertext))
+        if (!Base64Standard.TryDecode(request.Ciphertext, out var ciphertext))
         {
             return ProblemResults.From(
                 PasteErrors.Validation("Ciphertext must be valid base64."), context);
@@ -46,7 +47,7 @@ public static class PasteEndpoints
 
         return result.IsSuccess
             ? Results.Created($"{GroupPrefix}/{result.Value.Id}", result.Value)
-            : ProblemResults.From(result.Error!, context);
+            : ProblemResults.From(result.Error, context);
     }
 
     private static async Task<IResult> PeekAsync(
@@ -58,7 +59,7 @@ public static class PasteEndpoints
         var result = await handler.HandleAsync(id, cancellationToken);
         return result.IsSuccess
             ? Results.Ok(result.Value)
-            : ProblemResults.From(result.Error!, context);
+            : ProblemResults.From(result.Error, context);
     }
 
     private static async Task<IResult> ClaimAsync(
@@ -70,7 +71,7 @@ public static class PasteEndpoints
         var result = await handler.HandleAsync(id, cancellationToken);
         return result.IsSuccess
             ? Results.Ok(result.Value)
-            : ProblemResults.From(result.Error!, context);
+            : ProblemResults.From(result.Error, context);
     }
 
     private static async Task<IResult> DeleteAsync(
@@ -83,24 +84,6 @@ public static class PasteEndpoints
         var result = await handler.HandleAsync(id, deleteToken, cancellationToken);
         return result.IsSuccess
             ? Results.NoContent()
-            : ProblemResults.From(result.Error!, context);
-    }
-
-    private static bool TryDecodeBase64(string? encoded, out byte[] bytes)
-    {
-        bytes = [];
-        if (string.IsNullOrEmpty(encoded) || encoded.Length % 4 != 0)
-        {
-            return false;
-        }
-
-        var buffer = new byte[encoded.Length / 4 * 3];
-        if (!Convert.TryFromBase64String(encoded, buffer, out var written))
-        {
-            return false;
-        }
-
-        bytes = buffer[..written];
-        return true;
+            : ProblemResults.From(result.Error, context);
     }
 }

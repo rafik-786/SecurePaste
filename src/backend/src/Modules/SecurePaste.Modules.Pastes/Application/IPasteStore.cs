@@ -6,7 +6,7 @@ public interface IPasteStore
 {
     Task AddAsync(Paste paste, CancellationToken cancellationToken);
 
-    Task<Paste?> GetAsync(PasteId id, CancellationToken cancellationToken);
+    Task<PasteMetadata?> GetMetadataAsync(PasteId id, CancellationToken cancellationToken);
 
     Task<bool> ExistsAsync(PasteId id, CancellationToken cancellationToken);
 
