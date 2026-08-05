@@ -32,7 +32,7 @@ public class ClaimViewHandlerTests
 
         first.Value.RemainingViews.Should().Be(1);
         second.Value.RemainingViews.Should().Be(0);
-        third.Error!.Type.Should().Be(ErrorType.Gone);
+        third.Error.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -42,8 +42,7 @@ public class ClaimViewHandlerTests
 
         await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
 
-        PasteId.TryParse(created.Id, out var id).Should().BeTrue();
-        var stored = await _bed.Store.GetAsync(id, CancellationToken.None);
+        var stored = _bed.Store.Inspect(created.Id);
         stored.Should().NotBeNull();
         stored!.Ciphertext.Should().BeNull();
         stored.DestroyedAt.Should().NotBeNull();
@@ -57,7 +56,7 @@ public class ClaimViewHandlerTests
 
         var result = await _bed.Claim.HandleAsync(created.Id, CancellationToken.None);
 
-        result.Error!.Type.Should().Be(ErrorType.Gone);
+        result.Error.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -66,7 +65,7 @@ public class ClaimViewHandlerTests
         var unknown = await _bed.Claim.HandleAsync("abcdefgh2345", CancellationToken.None);
         var malformed = await _bed.Claim.HandleAsync("!!!", CancellationToken.None);
 
-        unknown.Error!.Type.Should().Be(ErrorType.NotFound);
-        malformed.Error!.Type.Should().Be(ErrorType.NotFound);
+        unknown.Error.Type.Should().Be(ErrorType.NotFound);
+        malformed.Error.Type.Should().Be(ErrorType.NotFound);
     }
 }

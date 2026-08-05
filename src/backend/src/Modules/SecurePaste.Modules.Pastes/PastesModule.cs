@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using SecurePaste.Modules.Pastes.Application;
 using SecurePaste.Modules.Pastes.Endpoints;
 using SecurePaste.Modules.Pastes.Infrastructure.Persistence;
@@ -25,8 +26,14 @@ public static class PastesModule
             configuration.GetConnectionString(ConnectionStringName),
             npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", PastesDbContext.Schema)));
 
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<IPasteStore, PasteStore>();
-        services.AddOptions<SweeperOptions>().BindConfiguration(SweeperOptions.SectionName);
+        services.AddOptions<SweeperOptions>()
+            .BindConfiguration(SweeperOptions.SectionName)
+            .Validate(
+                options => options.BatchSize > 0 && options.Interval > TimeSpan.Zero,
+                "The sweeper needs a positive interval and batch size.")
+            .ValidateOnStart();
         services.AddHostedService<ExpiredPasteSweeper>();
 
         services.AddScoped<CreatePasteHandler>();

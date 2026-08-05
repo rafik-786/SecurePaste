@@ -21,7 +21,7 @@ internal sealed class PasteEntityConfiguration : IEntityTypeConfiguration<Paste>
                 "(ciphertext IS NULL) = (destroyed_at IS NOT NULL)");
             table.HasCheckConstraint(
                 "ck_ciphertext_size",
-                "ciphertext IS NULL OR octet_length(ciphertext) <= 270000");
+                $"ciphertext IS NULL OR octet_length(ciphertext) <= {PasteLimits.DbCiphertextCeiling}");
         });
 
         builder.HasKey(p => p.Id);

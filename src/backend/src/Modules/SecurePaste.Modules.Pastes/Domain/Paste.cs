@@ -40,12 +40,12 @@ public sealed class Paste
 
     public DeleteTokenHash DeleteTokenHash { get; }
 
-    public int? RemainingViews => MaxViews is int max ? max - ViewsUsed : null;
+    public int? RemainingViews => ToMetadata().RemainingViews;
 
-    public bool IsGone(DateTimeOffset now) =>
-        DestroyedAt is not null
-        || ExpiresAt <= now
-        || (MaxViews is int max && ViewsUsed >= max);
+    public bool IsGone(DateTimeOffset now) => ToMetadata().IsGone(now);
+
+    internal PasteMetadata ToMetadata() =>
+        new(ExpiresAt, MaxViews, ViewsUsed, DestroyedAt, Ciphertext?.Length ?? 0, DeleteTokenHash);
 
     public static Result<Paste> Create(
         byte[] ciphertext,

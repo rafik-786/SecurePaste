@@ -15,7 +15,7 @@ public class DeletePasteHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         var peek = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
-        peek.Error!.Type.Should().Be(ErrorType.Gone);
+        peek.Error.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public class DeletePasteHandlerTests
 
         var second = await _bed.Delete.HandleAsync(created.Id, created.DeleteToken, CancellationToken.None);
 
-        second.Error!.Type.Should().Be(ErrorType.Gone);
+        second.Error.Type.Should().Be(ErrorType.Gone);
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class DeletePasteHandlerTests
 
         var result = await _bed.Delete.HandleAsync(created.Id, other.DeleteToken, CancellationToken.None);
 
-        result.Error!.Type.Should().Be(ErrorType.Forbidden);
+        result.Error.Type.Should().Be(ErrorType.Forbidden);
         var peek = await _bed.Peek.HandleAsync(created.Id, CancellationToken.None);
         peek.IsSuccess.Should().BeTrue();
     }
@@ -49,7 +49,7 @@ public class DeletePasteHandlerTests
 
         var result = await _bed.Delete.HandleAsync(created.Id, "###not-base64url###", CancellationToken.None);
 
-        result.Error!.Type.Should().Be(ErrorType.Forbidden);
+        result.Error.Type.Should().Be(ErrorType.Forbidden);
     }
 
     [Fact]
@@ -57,6 +57,6 @@ public class DeletePasteHandlerTests
     {
         var result = await _bed.Delete.HandleAsync("abcdefgh2345", "any", CancellationToken.None);
 
-        result.Error!.Type.Should().Be(ErrorType.NotFound);
+        result.Error.Type.Should().Be(ErrorType.NotFound);
     }
 }

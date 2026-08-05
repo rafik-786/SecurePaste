@@ -14,17 +14,17 @@ public sealed class PeekPasteHandler(IPasteStore store, TimeProvider clock)
             return PasteErrors.NotFound;
         }
 
-        var paste = await store.GetAsync(pasteId, cancellationToken);
-        if (paste is null)
+        var metadata = await store.GetMetadataAsync(pasteId, cancellationToken);
+        if (metadata is null)
         {
             return PasteErrors.NotFound;
         }
 
-        if (paste.IsGone(clock.GetUtcNow()))
+        if (metadata.IsGone(clock.GetUtcNow()))
         {
             return PasteErrors.Gone;
         }
 
-        return new PeekPasteResponse(paste.ExpiresAt, paste.RemainingViews, paste.Ciphertext!.Length);
+        return new PeekPasteResponse(metadata.ExpiresAt, metadata.RemainingViews, metadata.SizeBytes);
     }
 }

@@ -57,7 +57,7 @@ public class PasteTests
         var result = Create(Clock(), ciphertext: []);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Type.Should().Be(ErrorType.Validation);
+        result.Error.Type.Should().Be(ErrorType.Validation);
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class PasteTests
         var result = Create(Clock(), ciphertext: new byte[PasteLimits.MaxCiphertextBytes + 1]);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Type.Should().Be(ErrorType.TooLarge);
+        result.Error.Type.Should().Be(ErrorType.TooLarge);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class PasteTests
         var result = Create(Clock(), expiresIn: TimeSpan.FromSeconds(seconds));
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Type.Should().Be(ErrorType.Validation);
+        result.Error.Type.Should().Be(ErrorType.Validation);
     }
 
     [Theory]
@@ -107,7 +107,7 @@ public class PasteTests
         var result = Create(Clock(), maxViews: maxViews);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Type.Should().Be(ErrorType.Validation);
+        result.Error.Type.Should().Be(ErrorType.Validation);
     }
 
     [Theory]

@@ -13,8 +13,8 @@ internal sealed class FakePasteStore(TimeProvider clock) : IPasteStore
         return Task.CompletedTask;
     }
 
-    public Task<Paste?> GetAsync(PasteId id, CancellationToken cancellationToken) =>
-        Task.FromResult(_pastes.TryGetValue(id.Value, out var paste) ? paste : null);
+    public Task<PasteMetadata?> GetMetadataAsync(PasteId id, CancellationToken cancellationToken) =>
+        Task.FromResult(_pastes.TryGetValue(id.Value, out var paste) ? paste.ToMetadata() : null);
 
     public Task<bool> ExistsAsync(PasteId id, CancellationToken cancellationToken) =>
         Task.FromResult(_pastes.ContainsKey(id.Value));
@@ -66,4 +66,7 @@ internal sealed class FakePasteStore(TimeProvider clock) : IPasteStore
 
         return Task.FromResult(true);
     }
+
+    public Paste? Inspect(string id) =>
+        _pastes.TryGetValue(id, out var paste) ? paste : null;
 }

@@ -3,13 +3,13 @@ namespace SecurePaste.SharedKernel.Tests;
 public class ResultTests
 {
     [Fact]
-    public void Success_result_has_no_error()
+    public void Success_result_refuses_to_expose_an_error()
     {
         var result = Result.Success();
 
         result.IsSuccess.Should().BeTrue();
         result.IsFailure.Should().BeFalse();
-        result.Error.Should().BeNull();
+        result.Invoking(r => r.Error).Should().Throw<InvalidOperationException>();
     }
 
     [Fact]
@@ -54,6 +54,6 @@ public class ResultTests
         Result<string> result = Error.Gone("Paste.Gone", "Expired.");
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Type.Should().Be(ErrorType.Gone);
+        result.Error.Type.Should().Be(ErrorType.Gone);
     }
 }
