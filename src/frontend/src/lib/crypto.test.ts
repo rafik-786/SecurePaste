@@ -3,6 +3,7 @@ import { decodeBase64, decodeBase64Url, encodeBase64, encodeBase64Url } from './
 import {
   DecryptionError,
   decryptPaste,
+  encryptedByteSize,
   encryptPaste,
   InvalidKeyError,
   parseKey,
@@ -165,6 +166,19 @@ describe('encryptPaste and decryptPaste', () => {
       code: 'decryption-failed',
       message: 'Corrupted data or wrong key.',
     });
+  });
+});
+
+describe('encryptedByteSize', () => {
+  it.each([
+    { name: 'the worked example', payload: SAMPLE },
+    { name: 'empty content', payload: { content: '', language: 'plaintext' } },
+    { name: 'multi-byte characters', payload: { content: 'Привет 🔐', language: 'markdown' } },
+  ])('predicts the exact blob size for $name without encrypting', async ({ payload }) => {
+    const { ciphertext } = await encryptPaste(payload);
+
+    expect(encryptedByteSize(payload)).toBe(decodeBase64(ciphertext).byteLength);
+    expect(encryptedByteSize(payload)).toBe(payloadByteSize(payload) + IV_BYTES + TAG_BYTES);
   });
 });
 

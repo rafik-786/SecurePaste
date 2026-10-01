@@ -14,6 +14,13 @@ export default defineConfig(
     languageOptions: { globals: globals.node },
   },
   {
+    files: ['public/theme.js'],
+    languageOptions: { ecmaVersion: 5, sourceType: 'script', globals: globals.browser },
+    rules: {
+      'no-unused-vars': ['error', { caughtErrors: 'none' }],
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
@@ -38,5 +45,11 @@ export default defineConfig(
       jsxA11y.flatConfigs.recommended,
     ],
     languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['src/test/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
   },
 );

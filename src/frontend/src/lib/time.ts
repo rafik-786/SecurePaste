@@ -1,11 +1,15 @@
 const LOCALE = 'en';
-const MINUTE_MS = 60_000;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
+const SECOND_MS = 1_000;
+const MINUTE_SECONDS = 60;
+const HOUR_SECONDS = 3_600;
+const DAY_SECONDS = 86_400;
+const MINUTES_BELOW_SECONDS = 3_570;
+const HOURS_BELOW_SECONDS = 129_600;
 const MILLISECOND_DIGITS = 3;
 
-export const EXPIRED_LABEL = 'expired';
-export const UNDER_A_MINUTE_LABEL = 'in less than a minute';
+export const EXPIRED_PHRASE = 'expired';
+export const EXPIRED_LABEL = 'Expired';
+export const UNDER_A_MINUTE_PHRASE = 'in less than a minute';
 
 // .NET writes up to seven fractional digits; ECMAScript only guarantees parsing exactly three.
 const INSTANT_PATTERN = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})$/;
@@ -37,21 +41,29 @@ export function parseInstant(text: string): Date {
   return date;
 }
 
+export function isPast(target: Date, now: Date): boolean {
+  return target.getTime() <= now.getTime();
+}
+
 export function formatRelative(target: Date, now: Date): string {
-  const remainingMs = target.getTime() - now.getTime();
-  if (remainingMs <= 0) {
-    return EXPIRED_LABEL;
+  const seconds = (target.getTime() - now.getTime()) / SECOND_MS;
+  if (seconds <= 0) {
+    return EXPIRED_PHRASE;
   }
-  if (remainingMs < MINUTE_MS) {
-    return UNDER_A_MINUTE_LABEL;
+  if (seconds < MINUTE_SECONDS) {
+    return UNDER_A_MINUTE_PHRASE;
   }
-  if (remainingMs < HOUR_MS) {
-    return relativeFormat.format(Math.floor(remainingMs / MINUTE_MS), 'minute');
+  if (seconds < MINUTES_BELOW_SECONDS) {
+    return relativeFormat.format(Math.round(seconds / MINUTE_SECONDS), 'minute');
   }
-  if (remainingMs < DAY_MS) {
-    return relativeFormat.format(Math.floor(remainingMs / HOUR_MS), 'hour');
+  if (seconds < HOURS_BELOW_SECONDS) {
+    return relativeFormat.format(Math.round(seconds / HOUR_SECONDS), 'hour');
   }
-  return relativeFormat.format(Math.floor(remainingMs / DAY_MS), 'day');
+  return relativeFormat.format(Math.round(seconds / DAY_SECONDS), 'day');
+}
+
+export function formatExpiryLabel(target: Date, now: Date): string {
+  return isPast(target, now) ? EXPIRED_LABEL : `Expires ${formatRelative(target, now)}`;
 }
 
 export function formatAbsolute(date: Date, timeZone?: string): string {

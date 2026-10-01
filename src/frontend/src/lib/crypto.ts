@@ -1,6 +1,6 @@
 import { decodeBase64, decodeBase64Url, encodeBase64, encodeBase64Url } from './base64';
 import { IV_BYTES, KEY_BYTES, MAX_CIPHERTEXT_BYTES, TAG_BYTES } from './limits';
-import { parsePayload, serializePayload, type PastePayload } from './payload';
+import { parsePayload, payloadByteSize, serializePayload, type PastePayload } from './payload';
 
 const ALGORITHM = 'AES-GCM';
 const KEY_BITS = KEY_BYTES * 8;
@@ -42,6 +42,10 @@ export class DecryptionError extends Error {
   constructor(options?: ErrorOptions) {
     super('Corrupted data or wrong key.', options);
   }
+}
+
+export function encryptedByteSize(payload: PastePayload): number {
+  return payloadByteSize(payload) + BLOB_OVERHEAD_BYTES;
 }
 
 export async function encryptPaste(payload: PastePayload): Promise<EncryptedPaste> {

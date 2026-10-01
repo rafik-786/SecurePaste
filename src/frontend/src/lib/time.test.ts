@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   EXPIRED_LABEL,
+  EXPIRED_PHRASE,
   formatAbsolute,
+  formatExpiryLabel,
   formatRelative,
   isInstant,
+  isPast,
   parseInstant,
-  UNDER_A_MINUTE_LABEL,
+  UNDER_A_MINUTE_PHRASE,
 } from './time';
 
 const NOW = new Date('2026-08-04T18:00:00Z');
@@ -20,30 +23,49 @@ const plainSpaces = (text: string) => text.replace(/\s/g, ' ');
 describe('formatRelative', () => {
   it.each([
     {
-      name: 'a 15-minute paste just after creation',
-      offset: 15 * MINUTE - 5 * SECOND,
-      expected: 'in 14 minutes',
+      name: 'a 15 minute paste at creation',
+      offset: 15 * MINUTE - 2 * SECOND,
+      expected: 'in 15 minutes',
     },
-    {
-      name: 'a 1-day paste just after creation',
-      offset: DAY - 5 * SECOND,
-      expected: 'in 23 hours',
-    },
-    {
-      name: 'a 7-day paste just after creation',
-      offset: 7 * DAY - 5 * SECOND,
-      expected: 'in 6 days',
-    },
+    { name: 'a 1 hour paste at creation', offset: HOUR - 2 * SECOND, expected: 'in 1 hour' },
+    { name: 'a 1 day paste at creation', offset: DAY - 2 * SECOND, expected: 'in 24 hours' },
+    { name: 'a 7 day paste at creation', offset: 7 * DAY - 2 * SECOND, expected: 'in 7 days' },
+    { name: '23 hours 59 minutes', offset: 23 * HOUR + 59 * MINUTE, expected: 'in 24 hours' },
+    { name: '23 hours and a bit', offset: 23 * HOUR + 10 * MINUTE, expected: 'in 23 hours' },
     { name: 'exactly one minute', offset: MINUTE, expected: 'in 1 minute' },
-    { name: 'just under an hour', offset: HOUR - SECOND, expected: 'in 59 minutes' },
-    { name: 'exactly one hour', offset: HOUR, expected: 'in 1 hour' },
-    { name: 'exactly one day', offset: DAY, expected: 'in 1 day' },
-    { name: 'thirty seconds', offset: 30 * SECOND, expected: UNDER_A_MINUTE_LABEL },
-    { name: 'one millisecond', offset: 1, expected: UNDER_A_MINUTE_LABEL },
-    { name: 'the expiry instant itself', offset: 0, expected: EXPIRED_LABEL },
-    { name: 'a past expiry', offset: -MINUTE, expected: EXPIRED_LABEL },
+    { name: '89 seconds', offset: 89 * SECOND, expected: 'in 1 minute' },
+    { name: '90 seconds', offset: 90 * SECOND, expected: 'in 2 minutes' },
+    { name: 'just under 59.5 minutes', offset: 3_569 * SECOND, expected: 'in 59 minutes' },
+    { name: '59.5 minutes', offset: 3_570 * SECOND, expected: 'in 1 hour' },
+    { name: 'just under 36 hours', offset: 129_599 * SECOND, expected: 'in 36 hours' },
+    { name: '36 hours', offset: 36 * HOUR, expected: 'in 2 days' },
+    { name: '6 days 11 hours', offset: 6 * DAY + 11 * HOUR, expected: 'in 6 days' },
+    { name: '59 seconds', offset: 59 * SECOND, expected: UNDER_A_MINUTE_PHRASE },
+    { name: 'one millisecond', offset: 1, expected: UNDER_A_MINUTE_PHRASE },
+    { name: 'the expiry instant itself', offset: 0, expected: EXPIRED_PHRASE },
+    { name: 'a past expiry', offset: -MINUTE, expected: EXPIRED_PHRASE },
   ])('describes $name as "$expected"', ({ offset, expected }) => {
     expect(formatRelative(later(offset), NOW)).toBe(expected);
+  });
+});
+
+describe('formatExpiryLabel', () => {
+  it('leads with Expires while time remains', () => {
+    expect(formatExpiryLabel(later(23 * HOUR), NOW)).toBe('Expires in 23 hours');
+    expect(formatExpiryLabel(later(30 * SECOND), NOW)).toBe('Expires in less than a minute');
+  });
+
+  it('reads Expired, capitalised for the start of a strip item, once the instant passes', () => {
+    expect(formatExpiryLabel(later(0), NOW)).toBe(EXPIRED_LABEL);
+    expect(formatExpiryLabel(later(-DAY), NOW)).toBe('Expired');
+  });
+});
+
+describe('isPast', () => {
+  it('counts the expiry instant itself as past', () => {
+    expect(isPast(later(1), NOW)).toBe(false);
+    expect(isPast(later(0), NOW)).toBe(true);
+    expect(isPast(later(-1), NOW)).toBe(true);
   });
 });
 

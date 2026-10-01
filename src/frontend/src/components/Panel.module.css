@@ -1,0 +1,15 @@
+.panel {
+  border: var(--border-hairline) solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.body {
+  padding: var(--space-5);
+}
+
+@media (max-width: 40em) {
+  .body {
+    padding: var(--space-4);
+  }
+}

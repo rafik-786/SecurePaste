@@ -1,0 +1,15 @@
+.swap {
+  display: inline-grid;
+  justify-items: center;
+}
+
+.label,
+.hidden {
+  grid-area: 1 / 1;
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+
+.hidden {
+  visibility: hidden;
+  opacity: 0;
+}
