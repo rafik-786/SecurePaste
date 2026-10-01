@@ -1,9 +1,11 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { liveRegion, renderApp } from '../test/render';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SPINNER_DELAY_MS } from '../components/Spinner';
+import { installFakeApi } from '../test/fakeApi';
+import { liveRegion, renderApp } from '../test/render';
+import { stubSecureContext } from '../test/secureContext';
 import { ROUTE_LOADING_LABEL, RouteFallback } from './RouteFallback';
 
 const mounts = vi.hoisted(() => ({ create: 0 }));
@@ -18,6 +20,15 @@ vi.mock('../routes/create/CreateRoute', async () => {
       return <PageHeading>New paste</PageHeading>;
     },
   };
+});
+
+const ID = 'x7k2mn4pq9rs';
+const KEY = 'xCCvY4XmaJj_jCT8M5S78fgy1X4fvzuxtYPqsh_N4Jw';
+const DELETE_TOKEN = 'Xcmid5zrf-0Cn-W2Mh_yzNeCJTTY4bmz7jBr3lRgSnU';
+
+beforeEach(() => {
+  stubSecureContext();
+  installFakeApi().reply('GET', `/api/v1/pastes/${ID}`, 'hang');
 });
 
 afterEach(() => {
@@ -52,15 +63,15 @@ describe('app shell', () => {
 
   it('moves focus to main from the skip link without touching the fragment', async () => {
     const user = userEvent.setup();
-    window.history.replaceState(null, '', '/p/x7k2mn4pq9rs#the-key-lives-here');
-    renderApp('/p/x7k2mn4pq9rs#the-key-lives-here');
+    window.history.replaceState(null, '', `/p/${ID}#${KEY}`);
+    renderApp(`/p/${ID}#${KEY}`);
     await screen.findByRole('heading', { level: 1, name: 'Encrypted paste' });
 
     await user.tab();
     await user.keyboard('{Enter}');
 
     expect(screen.getByRole('main')).toHaveFocus();
-    expect(window.location.hash).toBe('#the-key-lives-here');
+    expect(window.location.hash).toBe(`#${KEY}`);
     window.history.replaceState(null, '', '/');
   });
 });
@@ -68,8 +79,8 @@ describe('app shell', () => {
 describe('routes', () => {
   it.each([
     { path: '/', heading: 'New paste' },
-    { path: '/p/x7k2mn4pq9rs', heading: 'Encrypted paste' },
-    { path: '/d/x7k2mn4pq9rs', heading: 'Delete paste' },
+    { path: `/p/${ID}#${KEY}`, heading: 'Encrypted paste' },
+    { path: `/d/${ID}#${DELETE_TOKEN}`, heading: 'Delete paste' },
     { path: '/about', heading: 'How SecurePaste works' },
     { path: '/pastes/x7k2mn4pq9rs', heading: 'Page not found' },
   ])('renders $path as "$heading" and titles the document after it', async ({ path, heading }) => {

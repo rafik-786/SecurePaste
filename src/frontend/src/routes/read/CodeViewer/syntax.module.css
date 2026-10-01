@@ -1,0 +1,74 @@
+.syntax :global(:is(.hljs-tag, .hljs-punctuation, .hljs-operator, .hljs-params, .hljs-subst)) {
+  color: var(--color-text);
+}
+
+.syntax :global(:is(.hljs-comment, .hljs-quote)) {
+  color: var(--syntax-comment);
+}
+
+.syntax :global(:is(.hljs-keyword, .hljs-selector-tag)) {
+  color: var(--syntax-keyword);
+}
+
+.syntax :global(:is(.hljs-string, .hljs-regexp, .hljs-char, .hljs-link)) {
+  color: var(--syntax-string);
+}
+
+.syntax :global(:is(.hljs-number, .hljs-literal, .hljs-symbol)) {
+  color: var(--syntax-number);
+}
+
+.syntax :global(:is(.hljs-title, .hljs-section)) {
+  color: var(--syntax-function);
+}
+
+.syntax :global(:is(.hljs-type, .hljs-built_in)) {
+  color: var(--syntax-type);
+}
+
+.syntax
+  :global(
+    :is(
+      .hljs-attr,
+      .hljs-attribute,
+      .hljs-property,
+      .hljs-variable,
+      .hljs-template-variable,
+      .hljs-selector-class,
+      .hljs-selector-id,
+      .hljs-selector-attr,
+      .hljs-selector-pseudo
+    )
+  ) {
+  color: var(--syntax-attribute);
+}
+
+.syntax :global(.hljs-name) {
+  color: var(--syntax-tag);
+}
+
+.syntax :global(:is(.hljs-meta, .hljs-doctag, .hljs-bullet, .hljs-code, .hljs-formula)) {
+  color: var(--syntax-meta);
+}
+
+.syntax :global(.hljs-addition) {
+  background-color: var(--syntax-addition-bg);
+  color: var(--syntax-addition);
+}
+
+.syntax :global(.hljs-deletion) {
+  background-color: var(--syntax-deletion-bg);
+  color: var(--syntax-deletion);
+}
+
+.syntax :global(.hljs-link) {
+  text-decoration-line: underline;
+}
+
+.syntax :global(.hljs-emphasis) {
+  font-style: italic;
+}
+
+.syntax :global(.hljs-strong) {
+  font-weight: var(--weight-semibold);
+}

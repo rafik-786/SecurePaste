@@ -59,6 +59,10 @@ function loadCore(): Promise<HLJSApi> {
   return pendingCore;
 }
 
+export function preloadHighlighter(): void {
+  void loadCore();
+}
+
 function loadLanguage(id: HighlightedLanguageId): Promise<HLJSApi> {
   let loading = pendingLanguages.get(id);
   if (!loading) {

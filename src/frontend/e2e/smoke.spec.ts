@@ -2,6 +2,16 @@ import { expect, test } from './fixtures';
 
 const CONTENT_SECURITY_POLICY =
   "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'";
+const CONTENT_HASH = /-[\w-]{8}\.(js|css)$/;
+const FIRST_LOAD_FILES = [
+  '/',
+  '/assets/CreateRoute.js',
+  '/assets/index.js',
+  '/assets/rolldown-runtime.js',
+  '/assets/style.css',
+  '/favicon.svg',
+  '/theme.js',
+];
 
 test('serves the head in the order the design asks for, with the exact policy', async ({
   page,
@@ -48,7 +58,10 @@ test('serves the head in the order the design asks for, with the exact policy', 
   );
 });
 
-test('loads / in at most six same-origin requests and calls no API', async ({ page, guard }) => {
+test('loads / in at most seven same-origin requests, exactly the budgeted files, and calls no API', async ({
+  page,
+  guard,
+}) => {
   const requests: string[] = [];
   page.on('request', (request) => requests.push(new URL(request.url()).pathname));
 
@@ -56,8 +69,10 @@ test('loads / in at most six same-origin requests and calls no API', async ({ pa
   await expect(page.getByRole('heading', { level: 1, name: 'New paste' })).toBeVisible();
   await page.waitForLoadState('networkidle');
 
-  expect(requests.length, requests.join(', ')).toBeLessThanOrEqual(6);
-  expect(requests.filter((path) => path.endsWith('.css'))).toHaveLength(1);
+  expect(requests.length, requests.join(', ')).toBeLessThanOrEqual(7);
+  expect(requests.map((path) => path.replace(CONTENT_HASH, '.$1')).sort()).toEqual(
+    FIRST_LOAD_FILES,
+  );
   expect(guard.apiCalls).toEqual([]);
 });
 

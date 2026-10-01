@@ -1,4 +1,5 @@
 import { expect, test } from './fixtures';
+import { PASTE_ID, PASTE_PATH, mockApi, peek } from './read-support';
 
 const KEY = 'xCCvY4XmaJj_jCT8M5S78fgy1X4fvzuxtYPqsh_N4Jw';
 
@@ -18,8 +19,10 @@ test('renders the shell landmarks on every page', async ({ page }) => {
 test('the skip link appears on first Tab and moves focus to main, keeping the fragment', async ({
   page,
 }) => {
-  await page.goto(`/p/x7k2mn4pq9rs#${KEY}`);
+  await mockApi(page, { [`GET ${PASTE_PATH}`]: [peek(1)] });
+  await page.goto(`/p/${PASTE_ID}#${KEY}`);
   await expect(page.getByRole('heading', { level: 1, name: 'Encrypted paste' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reveal and destroy' })).toBeVisible();
   const skip = page.getByRole('link', { name: 'Skip to content' });
   await expect(skip).not.toBeInViewport();
 

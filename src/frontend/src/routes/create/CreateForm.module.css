@@ -1,0 +1,30 @@
+.lead {
+  max-inline-size: var(--prose-max);
+  margin-block-start: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-block-start: var(--space-5);
+}
+
+.options {
+  display: grid;
+  gap: var(--space-5);
+}
+
+@media (min-width: 64em) {
+  .options {
+    grid-template-columns: 16rem 1fr;
+    column-gap: var(--space-6);
+  }
+}
+
+@media (max-width: 40em), (pointer: coarse) {
+  .shortcut {
+    display: none;
+  }
+}

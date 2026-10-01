@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { installMatchMedia, resetMediaQueries } from './media';
 import { installWindowStubs, scrollToMock } from './window';
 
@@ -9,6 +9,7 @@ installWindowStubs();
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   resetMediaQueries();
   scrollToMock.mockClear();
   localStorage.clear();

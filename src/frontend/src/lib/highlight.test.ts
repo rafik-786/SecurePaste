@@ -1,6 +1,6 @@
 import hljs from 'highlight.js/lib/core';
 import { describe, expect, it, vi } from 'vitest';
-import { escapeHtml, highlight } from './highlight';
+import { escapeHtml, highlight, preloadHighlighter } from './highlight';
 import { LANGUAGES } from './languages';
 
 const IMG_INJECTION = '<img src=x onerror=alert(1)>';
@@ -96,5 +96,15 @@ describe('highlight', () => {
 
   it('escapes a plain-text injection exactly', async () => {
     await expect(highlight(IMG_INJECTION, 'plaintext')).resolves.toBe(ESCAPED_IMG_INJECTION);
+  });
+});
+
+describe('preloadHighlighter', () => {
+  it('leaves highlight working after a preload', async () => {
+    preloadHighlighter();
+
+    await expect(highlight('def f(): pass', 'python')).resolves.toContain(
+      '<span class="hljs-keyword">def</span>',
+    );
   });
 });

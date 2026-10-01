@@ -1,5 +1,5 @@
 import { act, render, renderHook, screen } from '@testing-library/react';
-import { useRef, useState } from 'react';
+import { StrictMode, useRef, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { encryptedByteSize } from '../lib/crypto';
 import { documentTitleFor, useDocumentTitle } from './useDocumentTitle';
@@ -134,6 +134,23 @@ describe('useRequestSignal', () => {
     expect(first.aborted).toBe(true);
     expect(second.aborted).toBe(true);
     expect(first.reason).toMatchObject({ name: 'AbortError' });
+  });
+
+  it('hands out an already aborted signal once the screen has unmounted', () => {
+    const { result, unmount } = renderHook(() => useRequestSignal());
+    const nextSignal = result.current;
+    unmount();
+
+    const late = nextSignal();
+
+    expect(late.aborted).toBe(true);
+    expect(late.reason).toMatchObject({ name: 'AbortError' });
+  });
+
+  it('hands out live signals again after StrictMode remounts the screen', () => {
+    const { result } = renderHook(() => useRequestSignal(), { wrapper: StrictMode });
+
+    expect(result.current().aborted).toBe(false);
   });
 
   it('keeps a stable factory across renders', () => {

@@ -18,11 +18,13 @@ const CONTENT_SECURITY_POLICY = [
 const CSP_ANCHOR = '<link rel="icon"';
 
 const ENTRY_CHUNK_NAME = 'index';
-const ROUTE_MODULE = /[\\/]src[\\/]routes[\\/]/;
+const ROUTE_MODULE = /[\\/]src[\\/]routes[\\/](?!shared[\\/]|paste[\\/])/;
 const HIGHLIGHTER_MODULE = /[\\/](highlight\.js[\\/]|src[\\/]lib[\\/]highlight\.ts)/;
 
 // Code shared by several lazy routes would otherwise become extra common chunks, each one more
-// request on first load; the budget allows HTML, theme.js, CSS, entry, one route chunk, favicon.
+// request on first load. The budget allows seven: HTML, theme.js, entry, rolldown runtime, CSS,
+// one route chunk, favicon. The runtime chunk exists because highlight.js core is CommonJS, and
+// the entry group cannot absorb it.
 function belongsInEntryChunk(id: string): boolean {
   return !ROUTE_MODULE.test(id) && !HIGHLIGHTER_MODULE.test(id);
 }

@@ -2,16 +2,33 @@ import { test as base, expect } from '@playwright/test';
 
 export const API_ROUTES = '**/api/v1/**';
 
+const FAILED_RESOURCE = /^Failed to load resource: the server responded with a status of (\d{3})\b/;
+
 export interface PageGuard {
   readonly problems: string[];
   readonly apiCalls: string[];
+  readonly expectHttpError: (status: number) => Promise<void>;
 }
 
 export const test = base.extend<{ guard: PageGuard }>({
   guard: [
     async ({ page, baseURL }, use) => {
-      const guard: PageGuard = { problems: [], apiCalls: [] };
+      const problems: string[] = [];
       const origin = new URL(baseURL ?? 'http://127.0.0.1').origin;
+      const guard: PageGuard = {
+        problems,
+        apiCalls: [],
+        // Chrome logs every non-2xx response as a console error. A test that mocks one on purpose
+        // takes exactly that line off the guard; any other console error still fails the test.
+        expectHttpError: async (status) => {
+          const matches = (problem: string) =>
+            FAILED_RESOURCE.exec(problem)?.[1] === String(status);
+          await expect
+            .poll(() => problems.some(matches), { message: `a logged ${status} response` })
+            .toBe(true);
+          problems.splice(problems.findIndex(matches), 1);
+        },
+      };
 
       await page.addInitScript(() => {
         document.addEventListener('securitypolicyviolation', (event) => {
@@ -20,13 +37,13 @@ export const test = base.extend<{ guard: PageGuard }>({
       });
       page.on('console', (message) => {
         if (message.type() === 'error') {
-          guard.problems.push(message.text());
+          problems.push(message.text());
         }
       });
-      page.on('pageerror', (error) => guard.problems.push(error.message));
+      page.on('pageerror', (error) => problems.push(error.message));
       page.on('request', (request) => {
         if (new URL(request.url()).origin !== origin) {
-          guard.problems.push(`Third-party request: ${request.url()}`);
+          problems.push(`Third-party request: ${request.url()}`);
         }
       });
       await page.route(API_ROUTES, async (route) => {
@@ -38,7 +55,7 @@ export const test = base.extend<{ guard: PageGuard }>({
 
       await use(guard);
 
-      expect(guard.problems, 'console errors, page errors or CSP violations').toEqual([]);
+      expect(problems, 'console errors, page errors or CSP violations').toEqual([]);
     },
     { auto: true },
   ],
