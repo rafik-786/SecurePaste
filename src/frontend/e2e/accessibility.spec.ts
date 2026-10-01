@@ -26,7 +26,6 @@ interface Screen {
   readonly name: string;
   readonly open: (page: Page, guard: PageGuard) => Promise<void>;
   readonly hover?: (page: Page) => Locator;
-  readonly knownDefect?: string;
 }
 
 function heading(page: Page, name: string) {
@@ -344,8 +343,6 @@ const SCREENS: readonly Screen[] = [
       await expect(heading(page, 'Page not found')).toBeVisible();
     },
     hover: (page) => page.getByRole('link', { name: 'Create a paste' }),
-    knownDefect:
-      'a:hover in base.css paints link buttons --color-accent-hover, 1.13:1 light and 1.73:1 dark on the primary hover fill',
   },
   {
     name: 'read status gone, secondary link button hovered',
@@ -393,7 +390,6 @@ for (const theme of ['light', 'dark'] as const) {
       page,
       guard,
     }) => {
-      test.fail(screen.knownDefect !== undefined, screen.knownDefect);
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
       await screen.open(page, guard);
       if (screen.hover) {
@@ -414,3 +410,91 @@ for (const theme of ['light', 'dark'] as const) {
     });
   }
 }
+
+const HOVER_COLORS = {
+  light: {
+    primary: { text: 'rgb(255, 255, 255)', fill: 'rgb(58, 56, 50)' },
+    secondary: { text: 'rgb(27, 26, 23)', fill: 'rgb(241, 238, 231)' },
+    link: { rest: 'rgb(35, 70, 184)', hover: 'rgb(27, 56, 148)' },
+  },
+  dark: {
+    primary: { text: 'rgb(19, 19, 17)', fill: 'rgb(255, 255, 255)' },
+    secondary: { text: 'rgb(236, 233, 226)', fill: 'rgb(37, 36, 31)' },
+    link: { rest: 'rgb(142, 167, 255)', hover: 'rgb(177, 195, 255)' },
+  },
+} as const;
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`link buttons change only their fill on hover, and text links still change color, ${theme} theme`, async ({
+    page,
+    guard,
+  }) => {
+    const colors = HOVER_COLORS[theme];
+    await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+
+    await page.goto('/nowhere');
+    const primary = page.getByRole('link', { name: 'Create a paste' });
+    await primary.hover();
+    await expect(primary).toHaveCSS('background-color', colors.primary.fill);
+    await expect(primary).toHaveCSS('color', colors.primary.text);
+
+    await page.evaluate(() => {
+      const paragraph = document.createElement('p');
+      const link = document.createElement('a');
+      link.href = '/about';
+      link.textContent = 'How it works';
+      paragraph.append(link);
+      document.querySelector('main')?.append(paragraph);
+    });
+    const textLink = page.getByRole('link', { name: 'How it works' });
+    await page.mouse.move(0, 0);
+    await expect(textLink).toHaveCSS('color', colors.link.rest);
+    await textLink.hover();
+    await expect(textLink).toHaveCSS('color', colors.link.hover);
+
+    await openPaste(page, { [`GET ${PASTE_PATH}`]: [problem(410)] });
+    await expect(heading(page, 'This paste is gone')).toBeVisible();
+    await guard.expectHttpError(410);
+    const secondary = page.getByRole('link', { name: 'Create a paste' });
+    await secondary.hover();
+    await expect(secondary).toHaveCSS('background-color', colors.secondary.fill);
+    await expect(secondary).toHaveCSS('color', colors.secondary.text);
+  });
+}
+
+test('headings and alerts focused by script draw no ring, controls do', async ({ page, guard }) => {
+  await openPaste(page, { [`GET ${PASTE_PATH}`]: [problem(410)] });
+  const gone = heading(page, 'This paste is gone');
+  await expect(gone).toBeFocused();
+  await expect(gone).toHaveCSS('outline-style', 'none');
+  await guard.expectHttpError(410);
+  await page.keyboard.press('Tab');
+  const create = page.getByRole('link', { name: 'Create a paste' });
+  await expect(create).toBeFocused();
+  await expect(create).toHaveCSS('outline-style', 'solid');
+
+  await mockApi(page, { [`GET ${PASTE_PATH}`]: [peek(1)] });
+  await page.goto(`/d/${PASTE_ID}#${DELETE_TOKEN}`);
+  const confirm = heading(page, 'Delete this paste?');
+  await expect(confirm).toBeFocused();
+  await expect(confirm).toHaveCSS('outline-style', 'none');
+
+  const paste = await sealPaste(BASH_CONTENT, 'bash');
+  await mockApi(page, {
+    [`GET ${PASTE_PATH}`]: [peek(1, paste.sizeBytes)],
+    [`POST ${CLAIM_PATH}`]: [claim(paste.ciphertext, 0)],
+  });
+  await page.goto(`/p/${PASTE_ID}#${paste.key}`);
+  const reveal = page.getByRole('button', { name: 'Reveal and destroy' });
+  await reveal.focus();
+  await page.keyboard.press('Enter');
+  const destroyed = page.getByRole('group', { name: 'This paste is now destroyed' });
+  await expect(destroyed).toBeFocused();
+  await expect(destroyed).toHaveCSS('outline-style', 'none');
+
+  await page.goto('/');
+  const views = page.getByRole('textbox', { name: 'Number of views' });
+  await views.click();
+  await expect(views).toBeFocused();
+  await expect(views).toHaveCSS('outline-style', 'solid');
+});

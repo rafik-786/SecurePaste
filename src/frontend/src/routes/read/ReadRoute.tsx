@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { webCryptoAvailable } from '../../lib/platform';
-import { fragmentOf } from '../paste/linkChecks';
+import { fragmentOf } from '../shared/linkChecks';
 import { UnsupportedStatus } from '../shared/UnsupportedStatus';
 import { PasteReader } from './PasteReader';
 import { readLinkCheck } from './readState';

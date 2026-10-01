@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-
-export const PRODUCT_NAME = 'SecurePaste';
+import { PRODUCT_NAME } from '../lib/product';
 
 export function documentTitleFor(heading: string): string {
   return `${heading} - ${PRODUCT_NAME}`;

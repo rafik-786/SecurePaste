@@ -71,4 +71,16 @@ describe('Panel', () => {
     expect(panel?.firstElementChild).toHaveTextContent('Opened');
     expect(panel?.lastElementChild).toHaveTextContent('Body');
   });
+
+  it('puts full-bleed content straight under the strip, with no padded body around it', () => {
+    const { container } = render(
+      <Panel fullBleed strip={<SealStrip state="opened" items={['4 views left']} />}>
+        <figure>Code</figure>
+      </Panel>,
+    );
+
+    const panel = container.firstElementChild;
+    expect(panel?.children).toHaveLength(2);
+    expect(panel?.lastElementChild?.tagName).toBe('FIGURE');
+  });
 });

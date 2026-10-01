@@ -25,8 +25,9 @@ export function parsePayload(bytes: Uint8Array): PastePayload {
   let value: unknown;
   try {
     value = JSON.parse(strictDecoder.decode(bytes));
-  } catch (cause) {
-    throw new InvalidPayloadError('The payload is not UTF-8 encoded JSON.', { cause });
+  } catch {
+    // No cause: V8 quotes the start of the input in JSON syntax errors, and that is plaintext.
+    throw new InvalidPayloadError('The payload is not UTF-8 encoded JSON.');
   }
 
   if (!isRecord(value) || typeof value.content !== 'string' || typeof value.language !== 'string') {

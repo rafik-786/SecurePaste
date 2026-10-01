@@ -1,14 +1,14 @@
-import type { ApiError } from '../../api/errors';
 import { Alert } from '../../components/Alert';
 import { Countdown } from '../../components/Countdown';
 import type { Countdown as CountdownState } from '../../hooks/useCountdown';
 import { SIZE_LIMIT_LABEL } from '../../lib/format';
+import type { CreateFailure } from './useCreateSubmission';
 
 const TEXT_KEPT = 'Your text is still here.';
 const NO_DETAIL = 'The request was not valid.';
 
 export interface CreateFailureAlertProps {
-  readonly failure: ApiError;
+  readonly failure: CreateFailure;
   readonly countdown: CountdownState;
   readonly className?: string | undefined;
 }
@@ -54,6 +54,12 @@ export function CreateFailureAlert({ failure, countdown, className }: CreateFail
             Check your connection and try again. {TEXT_KEPT} If the request did reach the server,
             that paste has no link anywhere and expires on its own.
           </p>
+        </Alert>
+      );
+    case 'encrypt-failed':
+      return (
+        <Alert {...shared} variant="danger" title="This browser could not encrypt the paste">
+          <p>Nothing was sent. Try again. {TEXT_KEPT}</p>
         </Alert>
       );
     default:

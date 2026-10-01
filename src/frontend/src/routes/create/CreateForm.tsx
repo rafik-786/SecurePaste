@@ -1,8 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPaste } from '../../api/client';
-import { ApiError } from '../../api/errors';
-import { requestFailure } from '../../api/request';
-import type { CreatePasteResponse } from '../../api/types';
+import { useEffect, useId, useRef } from 'react';
 import { ActionRow } from '../../components/ActionRow';
 import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
@@ -14,61 +10,21 @@ import { SegmentedControl } from '../../components/SegmentedControl';
 import { Select } from '../../components/Select';
 import { SizeMeter } from '../../components/SizeMeter';
 import { TextArea } from '../../components/TextArea';
-import { useCountdown } from '../../hooks/useCountdown';
-import { measureEncryptedSize, useEncryptedSize } from '../../hooks/useEncryptedSize';
-import { useRequestSignal } from '../../hooks/useRequestSignal';
-import { encryptPaste, PayloadTooLargeError, type EncryptedPaste } from '../../lib/crypto';
+import { useEncryptedSize } from '../../hooks/useEncryptedSize';
 import { formatShortcut } from '../../lib/format';
 import { isKnownLanguage, LANGUAGES } from '../../lib/languages';
 import { EXPIRY_OPTIONS, MAX_VIEWS, MIN_VIEWS } from '../../lib/limits';
 import { isApplePlatform, isSubmitShortcut, SUBMIT_KEY_SHORTCUTS } from '../../lib/platform';
-import { parseInstant } from '../../lib/time';
 import { CreateFailureAlert } from './CreateFailureAlert';
-import {
-  contentError,
-  createRequest,
-  maxViewsFor,
-  overLimitError,
-  viewCountError,
-  type CreateOptions,
-  type ViewsChoice,
-} from './formOptions';
-import { deleteLink, shareLink, type CreatedPaste } from './links';
+import type { CreateOptions, ViewsChoice } from './formOptions';
+import type { CreatedPaste } from './links';
+import { ENCRYPTING_LABEL, UPLOADING_LABEL, useCreateSubmission } from './useCreateSubmission';
 import styles from './CreateForm.module.css';
 
 const SUBMIT_LABEL = 'Encrypt and create link';
-const ENCRYPTING_LABEL = 'Encrypting...';
-const UPLOADING_LABEL = 'Uploading...';
 const BUSY_LABELS = [ENCRYPTING_LABEL, UPLOADING_LABEL];
 
 const EXPIRY_SEGMENTS = EXPIRY_OPTIONS.map(({ id, label }) => ({ value: id, label }));
-
-type Submission =
-  | { readonly phase: 'idle' }
-  | { readonly phase: 'encrypting' }
-  | { readonly phase: 'uploading' }
-  | { readonly phase: 'failed'; readonly failure: ApiError };
-
-const IDLE: Submission = { phase: 'idle' };
-
-interface FocusRequest {
-  readonly target: 'content' | 'viewCount';
-}
-
-function busyLabelFor(submission: Submission): string | undefined {
-  switch (submission.phase) {
-    case 'encrypting':
-      return ENCRYPTING_LABEL;
-    case 'uploading':
-      return UPLOADING_LABEL;
-    default:
-      return undefined;
-  }
-}
-
-function checkContent(content: string, language: string): string | undefined {
-  return contentError(content, measureEncryptedSize(content, language));
-}
 
 export interface CreateFormProps {
   readonly options: CreateOptions;
@@ -83,128 +39,26 @@ export function CreateForm({
   onCreated,
   focusContentOnMount,
 }: CreateFormProps) {
-  const contentRef = useRef<HTMLTextAreaElement>(null);
-  const viewCountRef = useRef<HTMLInputElement>(null);
   const meterId = useId();
   const viewCountErrorId = useId();
-  const [content, setContent] = useState('');
-  const [contentProblem, setContentProblem] = useState<string | undefined>(undefined);
-  const [viewCountProblem, setViewCountProblem] = useState<string | undefined>(undefined);
-  const [submission, setSubmission] = useState<Submission>(IDLE);
-  const [focusRequest, setFocusRequest] = useState<FocusRequest | undefined>(undefined);
-  const edited = useRef({ content: false, viewCount: false });
-  const inFlight = useRef(false);
-  const requestSignal = useRequestSignal();
-  const bytes = useEncryptedSize(content, options.language);
-
-  const failure = submission.phase === 'failed' ? submission.failure : undefined;
-  const countdown = useCountdown(failure?.kind === 'rate-limited' ? failure : undefined);
-  const waiting = !countdown.done;
-  const busyLabel = busyLabelFor(submission);
-  const busy = busyLabel !== undefined;
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const viewCountRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const form = useCreateSubmission({
+    contentRef,
+    viewCountRef,
+    submitRef,
+    options,
+    onOptionsChange,
+    onCreated,
+  });
+  const bytes = useEncryptedSize(form.content, options.language);
 
   useEffect(() => {
     if (focusContentOnMount) {
       contentRef.current?.focus();
     }
-  }, [focusContentOnMount]);
-
-  useEffect(() => {
-    if (focusRequest) {
-      (focusRequest.target === 'content' ? contentRef : viewCountRef).current?.focus();
-    }
-  }, [focusRequest]);
-
-  const changeOptions = (next: CreateOptions) => {
-    if (busy) {
-      return;
-    }
-    onOptionsChange(next);
-    if (contentProblem !== undefined && next.language !== options.language) {
-      setContentProblem(checkContent(content, next.language));
-    }
-    if (viewCountProblem !== undefined) {
-      setViewCountProblem(viewCountError(next));
-    }
-  };
-
-  const changeContent = (value: string) => {
-    if (busy) {
-      return;
-    }
-    edited.current.content = true;
-    setContent(value);
-    if (contentProblem !== undefined) {
-      setContentProblem(checkContent(value, options.language));
-    }
-  };
-
-  const changeViewCount = (viewCount: string) => {
-    if (busy) {
-      return;
-    }
-    edited.current.viewCount = true;
-    changeOptions({ ...options, views: 'limit', viewCount });
-  };
-
-  const submit = async () => {
-    if (inFlight.current || waiting) {
-      return;
-    }
-    const maxViews = maxViewsFor(options);
-    const nextContentProblem = checkContent(content, options.language);
-    const nextViewCountProblem = viewCountError(options);
-    setContentProblem(nextContentProblem);
-    setViewCountProblem(nextViewCountProblem);
-    if (nextContentProblem !== undefined || maxViews === undefined) {
-      setSubmission(IDLE);
-      setFocusRequest({ target: nextContentProblem === undefined ? 'viewCount' : 'content' });
-      return;
-    }
-
-    inFlight.current = true;
-    setSubmission({ phase: 'encrypting' });
-
-    let encrypted: EncryptedPaste;
-    try {
-      encrypted = await encryptPaste({ content, language: options.language });
-    } catch (error) {
-      inFlight.current = false;
-      if (error instanceof PayloadTooLargeError) {
-        setSubmission(IDLE);
-        setContentProblem(overLimitError(error.blobBytes));
-        setFocusRequest({ target: 'content' });
-      } else {
-        setSubmission({ phase: 'failed', failure: new ApiError({ kind: 'unexpected' }) });
-      }
-      return;
-    }
-
-    setSubmission({ phase: 'uploading' });
-    let created: CreatePasteResponse;
-    try {
-      created = await createPaste(
-        createRequest(encrypted.ciphertext, options.expiry, maxViews),
-        requestSignal(),
-      );
-    } catch (error) {
-      inFlight.current = false;
-      const failed = requestFailure(error);
-      if (failed) {
-        setSubmission({ phase: 'failed', failure: failed });
-      }
-      return;
-    }
-
-    inFlight.current = false;
-    const { origin } = window.location;
-    onCreated({
-      shareLink: shareLink(origin, created.id, encrypted.key),
-      deleteLink: deleteLink(origin, created.id, created.deleteToken),
-      expiresAt: parseInstant(created.expiresAt),
-      maxViews,
-    });
-  };
+  }, [focusContentOnMount, contentRef]);
 
   const viewsOptions: readonly RadioOption<ViewsChoice>[] = [
     { value: 'burn', label: 'Burn after reading', hint: 'Destroyed after the first view.' },
@@ -216,26 +70,22 @@ export function CreateForm({
           <NumberInput
             ref={viewCountRef}
             aria-label="Number of views"
-            aria-invalid={viewCountProblem !== undefined || undefined}
-            aria-describedby={viewCountProblem === undefined ? undefined : viewCountErrorId}
+            aria-invalid={form.viewCountProblem !== undefined || undefined}
+            aria-describedby={form.viewCountProblem === undefined ? undefined : viewCountErrorId}
             // Out of the tab order until Limit is chosen: focusing it selects Limit, so tabbing
             // past it would silently swap burn after reading for five views.
             tabIndex={options.views === 'limit' ? undefined : -1}
-            readOnly={busy}
+            readOnly={form.busy}
             value={options.viewCount}
             min={MIN_VIEWS}
             max={MAX_VIEWS}
-            onValueChange={changeViewCount}
+            onValueChange={form.changeViewCount}
             onActivate={() => {
               if (options.views !== 'limit') {
-                changeOptions({ ...options, views: 'limit' });
+                form.changeOptions({ ...options, views: 'limit' });
               }
             }}
-            onBlur={() => {
-              if (edited.current.viewCount) {
-                setViewCountProblem(viewCountError(options));
-              }
-            }}
+            onBlur={form.blurViewCount}
           />{' '}
           views
         </>
@@ -261,32 +111,28 @@ export function CreateForm({
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          void submit();
+          form.submit();
         }}
         onKeyDown={(event) => {
           if (isSubmitShortcut(event)) {
             event.preventDefault();
-            void submit();
+            form.submit();
           }
         }}
       >
-        <Field label="Content" error={contentProblem} describedBy={meterId}>
+        <Field label="Content" error={form.contentProblem} describedBy={meterId}>
           {(control) => (
             <>
               <TextArea
                 {...control}
                 ref={contentRef}
-                value={content}
+                value={form.content}
                 placeholder="Paste text or code here"
-                readOnly={busy}
+                readOnly={form.busy}
                 onChange={(event) => {
-                  changeContent(event.target.value);
+                  form.changeContent(event.target.value);
                 }}
-                onBlur={() => {
-                  if (edited.current.content) {
-                    setContentProblem(checkContent(content, options.language));
-                  }
-                }}
+                onBlur={form.blurContent}
               />
               <SizeMeter id={meterId} bytes={bytes} />
             </>
@@ -305,7 +151,7 @@ export function CreateForm({
                 onChange={(event) => {
                   const { value } = event.target;
                   if (isKnownLanguage(value)) {
-                    changeOptions({ ...options, language: value });
+                    form.changeOptions({ ...options, language: value });
                   }
                 }}
               >
@@ -323,10 +169,10 @@ export function CreateForm({
             options={EXPIRY_SEGMENTS}
             value={options.expiry}
             onChange={(expiry) => {
-              changeOptions({ ...options, expiry });
+              form.changeOptions({ ...options, expiry });
             }}
             hint="Removed from the server at this time, even if nobody opened it."
-            busy={busy}
+            busy={form.busy}
           />
         </div>
 
@@ -336,25 +182,27 @@ export function CreateForm({
           options={viewsOptions}
           value={options.views}
           onChange={(views) => {
-            changeOptions({ ...options, views });
+            form.changeOptions({ ...options, views });
           }}
-          error={viewCountProblem}
+          error={form.viewCountProblem}
           errorId={viewCountErrorId}
-          busy={busy}
+          busy={form.busy}
         />
 
-        {failure && <CreateFailureAlert failure={failure} countdown={countdown} />}
+        {form.failure && <CreateFailureAlert failure={form.failure} countdown={form.countdown} />}
 
         <ActionRow>
           <Button
+            ref={submitRef}
             type="submit"
             variant="primary"
             size="lg"
             icon={LockIcon}
-            busyLabel={busyLabel}
+            busyLabel={form.busyLabel}
             reserveLabels={BUSY_LABELS}
-            disabled={waiting}
+            disabled={form.waiting}
             aria-keyshortcuts={SUBMIT_KEY_SHORTCUTS}
+            onPointerDown={form.pressSubmit}
           >
             {SUBMIT_LABEL}
           </Button>

@@ -324,6 +324,37 @@ describe('response shape checks', () => {
     { name: 'a JSON array', body: '[]', call: 'claim' },
     { name: 'a path-traversal id', body: { ...CREATED, id: '../../admin' }, call: 'create' },
     { name: 'a missing delete token', body: { ...CREATED, deleteToken: '' }, call: 'create' },
+    { name: 'a numeric delete token', body: { ...CREATED, deleteToken: 42 }, call: 'create' },
+    {
+      name: 'a delete token a URL would rewrite',
+      body: { ...CREATED, deleteToken: 'a b#c' },
+      call: 'create',
+    },
+    {
+      name: 'a 42-character delete token',
+      body: { ...CREATED, deleteToken: DELETE_TOKEN.slice(1) },
+      call: 'create',
+    },
+    {
+      name: 'a 44-character delete token',
+      body: { ...CREATED, deleteToken: `${DELETE_TOKEN}A` },
+      call: 'create',
+    },
+    {
+      name: 'a padded delete token',
+      body: { ...CREATED, deleteToken: `${DELETE_TOKEN}=` },
+      call: 'create',
+    },
+    {
+      name: 'a delete token in standard base64',
+      body: { ...CREATED, deleteToken: `+${DELETE_TOKEN.slice(1)}` },
+      call: 'create',
+    },
+    {
+      name: 'a delete token with a non-canonical last character',
+      body: { ...CREATED, deleteToken: `${'A'.repeat(42)}B` },
+      call: 'create',
+    },
     {
       name: 'an expiry without a zone',
       body: { ...CREATED, expiresAt: '2026-08-04T18:32:00' },

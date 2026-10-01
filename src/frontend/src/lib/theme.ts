@@ -20,11 +20,6 @@ function withStorage<T>(action: (storage: Storage) => T): T | undefined {
   }
 }
 
-export function readStoredTheme(): Theme | undefined {
-  const stored = withStorage((storage) => storage.getItem(THEME_STORAGE_KEY));
-  return isTheme(stored) ? stored : undefined;
-}
-
 export function storeTheme(theme: Theme): void {
   withStorage((storage) => {
     storage.setItem(THEME_STORAGE_KEY, theme);

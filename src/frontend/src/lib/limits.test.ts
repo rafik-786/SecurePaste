@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EXPIRY_OPTIONS, MAX_CIPHERTEXT_BYTES, MAX_PAYLOAD_BYTES } from './limits';
+import { EXPIRY_OPTIONS, IV_BYTES, MAX_CIPHERTEXT_BYTES, TAG_BYTES } from './limits';
 
 const SERVER_MIN_EXPIRY_SECONDS = 60;
 const SERVER_MAX_EXPIRY_SECONDS = 604_800;
@@ -7,7 +7,7 @@ const SERVER_MAX_EXPIRY_SECONDS = 604_800;
 describe('limits', () => {
   it('leaves room for the IV and the tag inside the server ciphertext cap', () => {
     expect(MAX_CIPHERTEXT_BYTES).toBe(262_144);
-    expect(MAX_PAYLOAD_BYTES).toBe(262_116);
+    expect(MAX_CIPHERTEXT_BYTES - IV_BYTES - TAG_BYTES).toBe(262_116);
   });
 
   it('offers exactly the four expiry choices from the requirements', () => {

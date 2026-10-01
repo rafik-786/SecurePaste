@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useParams } from 'react-router';
-import { fragmentOf } from '../paste/linkChecks';
+import { fragmentOf } from '../shared/linkChecks';
 import { deleteLinkCheck } from './deleteState';
 import { DeleteLinkProblemStatus } from './DeleteStatus';
 import { PasteDeleter } from './PasteDeleter';

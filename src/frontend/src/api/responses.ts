@@ -1,4 +1,6 @@
+import { isBase64UrlOfLength } from '../lib/base64';
 import { isNonNegativeInteger, isRecord } from '../lib/guards';
+import { DELETE_TOKEN_BYTES } from '../lib/limits';
 import { isValidPasteId } from '../lib/pasteId';
 import { isInstant } from '../lib/time';
 import type { ClaimResponse, CreatePasteResponse, PeekResponse } from './types';
@@ -16,7 +18,7 @@ export function parseCreatePasteResponse(value: unknown): CreatePasteResponse | 
     !isRecord(value) ||
     typeof value.id !== 'string' ||
     !isValidPasteId(value.id) ||
-    !isNonEmptyString(value.deleteToken) ||
+    !isBase64UrlOfLength(value.deleteToken, DELETE_TOKEN_BYTES) ||
     !isInstant(value.expiresAt)
   ) {
     return undefined;

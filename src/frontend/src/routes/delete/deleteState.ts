@@ -1,8 +1,10 @@
 import type { ApiError } from '../../api/errors';
 import type { PeekResponse } from '../../api/types';
+import { isBase64UrlOfLength } from '../../lib/base64';
+import { DELETE_TOKEN_BYTES } from '../../lib/limits';
 import { isValidPasteId } from '../../lib/pasteId';
 import { parseInstant } from '../../lib/time';
-import { failureKind, isWellFormedSecret, type FailureCause } from '../paste/linkChecks';
+import { failureState, type FailureState } from '../shared/failureState';
 
 export type DeleteLinkCheck = 'invalid-id' | 'incomplete' | 'ready';
 
@@ -16,45 +18,23 @@ export type DeleteState =
   | { readonly kind: 'confirm'; readonly paste: DeletablePaste; readonly deleting: boolean }
   | { readonly kind: 'deleted' }
   | { readonly kind: 'wrong-token' }
-  | { readonly kind: 'not-found' }
-  | { readonly kind: 'already-gone' }
-  | { readonly kind: 'rate-limited'; readonly error: ApiError }
-  | { readonly kind: 'check-failed'; readonly cause: FailureCause }
-  | { readonly kind: 'delete-failed'; readonly cause: FailureCause };
+  | FailureState<'check-failed' | 'delete-failed'>;
 
 export type DeleteStatusState = Exclude<DeleteState, { readonly kind: 'checking' | 'confirm' }>;
 
 export const CHECKING: DeleteState = { kind: 'checking' };
 export const DELETED: DeleteState = { kind: 'deleted' };
+const WRONG_TOKEN: DeleteState = { kind: 'wrong-token' };
 
 export function deleteLinkCheck(id: string, deleteToken: string): DeleteLinkCheck {
   if (!isValidPasteId(id)) {
     return 'invalid-id';
   }
-  return isWellFormedSecret(deleteToken) ? 'ready' : 'incomplete';
+  return isBase64UrlOfLength(deleteToken, DELETE_TOKEN_BYTES) ? 'ready' : 'incomplete';
 }
 
 export function deletablePaste(peek: PeekResponse): DeletablePaste {
   return { expiresAt: parseInstant(peek.expiresAt), remainingViews: peek.remainingViews };
-}
-
-function failureState(error: ApiError, failed: 'check-failed' | 'delete-failed'): DeleteState {
-  switch (failureKind(error)) {
-    case 'forbidden':
-      return failed === 'delete-failed'
-        ? { kind: 'wrong-token' }
-        : { kind: failed, cause: 'server' };
-    case 'not-found':
-      return { kind: 'not-found' };
-    case 'gone':
-      return { kind: 'already-gone' };
-    case 'rate-limited':
-      return { kind: 'rate-limited', error };
-    case 'network':
-      return { kind: failed, cause: 'network' };
-    case 'server':
-      return { kind: failed, cause: 'server' };
-  }
 }
 
 export function peekFailureState(error: ApiError): DeleteState {
@@ -62,5 +42,5 @@ export function peekFailureState(error: ApiError): DeleteState {
 }
 
 export function deleteFailureState(error: ApiError): DeleteState {
-  return failureState(error, 'delete-failed');
+  return error.kind === 'forbidden' ? WRONG_TOKEN : failureState(error, 'delete-failed');
 }

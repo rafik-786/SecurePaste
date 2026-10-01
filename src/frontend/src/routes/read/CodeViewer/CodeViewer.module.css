@@ -131,12 +131,12 @@
 
   .actions {
     flex: 1 1 100%;
-    flex-wrap: nowrap;
   }
 
+  /* Equal shares when all three fit; on narrower phones the row wraps rather than squeeze a label. */
   .action {
     flex: 1 1 0;
-    min-inline-size: 0;
+    min-inline-size: max-content;
   }
 }
 

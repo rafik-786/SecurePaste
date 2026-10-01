@@ -1,17 +1,9 @@
-import type { ApiError } from '../../api/errors';
-import { Countdown } from '../../components/Countdown';
-import {
-  AlertIcon,
-  ClockIcon,
-  FlameIcon,
-  OfflineIcon,
-  UnlinkIcon,
-} from '../../components/icons/icons';
+import { AlertIcon, FlameIcon, OfflineIcon, UnlinkIcon } from '../../components/icons/icons';
 import { StatusPage } from '../../components/StatusPage';
-import { useCountdown } from '../../hooks/useCountdown';
 import { viewsRemainSentence } from '../../lib/format';
-import { TryAgainButton } from '../paste/TryAgainButton';
 import { CreatePasteLink } from '../shared/CreatePasteLink';
+import { RateLimitedStatus } from '../shared/RateLimitedStatus';
+import { TryAgainButton } from '../shared/TryAgainButton';
 import type { ReadStatusState } from './readState';
 
 export interface ReadStatusProps {
@@ -21,11 +13,6 @@ export interface ReadStatusProps {
 
 export interface LinkProblemStatusProps {
   readonly problem: 'invalid-id' | 'incomplete';
-}
-
-interface RateLimitedStatusProps {
-  readonly error: ApiError;
-  readonly onRetry: () => void;
 }
 
 export function LinkProblemStatus({ problem }: LinkProblemStatusProps) {
@@ -51,28 +38,6 @@ export function LinkProblemStatus({ problem }: LinkProblemStatusProps) {
       <p>
         The part after the # is missing or damaged. That part is the decryption key, so the paste
         cannot be opened without it. Ask the sender for the full link. No view was used.
-      </p>
-    </StatusPage>
-  );
-}
-
-function RateLimitedStatus({ error, onRetry }: RateLimitedStatusProps) {
-  const countdown = useCountdown(error);
-  return (
-    <StatusPage
-      icon={ClockIcon}
-      tone="warning"
-      title="Too many requests"
-      actions={
-        <>
-          <TryAgainButton onRetry={onRetry} waiting={!countdown.done} />
-          <CreatePasteLink />
-        </>
-      }
-    >
-      <p>Your network has made too many requests in the last minute. No view was used.</p>
-      <p>
-        <Countdown countdown={countdown} />
       </p>
     </StatusPage>
   );
@@ -135,7 +100,11 @@ export function ReadStatus({ state, onRetry }: ReadStatusProps) {
       );
     }
     case 'rate-limited':
-      return <RateLimitedStatus error={state.error} onRetry={onRetry} />;
+      return (
+        <RateLimitedStatus error={state.error} onRetry={onRetry} actions={<CreatePasteLink />}>
+          Your network has made too many requests in the last minute. No view was used.
+        </RateLimitedStatus>
+      );
     case 'check-failed':
       return state.cause === 'network' ? (
         <StatusPage

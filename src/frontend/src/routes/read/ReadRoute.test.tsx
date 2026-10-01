@@ -306,6 +306,7 @@ describe('read route, unlimited pastes', () => {
     expect(screen.getByText('Expires in 6 days')).toBeInTheDocument();
     expect(screen.getByText('Opened')).toBeInTheDocument();
     await expectFocus(region());
+    expect(api.count('GET', PEEK)).toBe(1);
     expect(api.count('POST', CLAIM)).toBe(1);
     expect(screen.queryByRole('button', { name: /^Reveal/ })).toBeNull();
   });

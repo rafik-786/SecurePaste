@@ -8,6 +8,19 @@
   gap: var(--space-5);
 }
 
+.links {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
+  row-gap: var(--space-5);
+}
+
+@media (max-width: 40em) {
+  .links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .expiry {
   font-size: var(--text-sm);
   line-height: var(--leading-normal);

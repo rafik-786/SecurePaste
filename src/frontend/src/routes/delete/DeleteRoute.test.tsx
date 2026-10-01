@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppProviders } from '../../app/AppProviders';
@@ -18,8 +19,8 @@ const BODY =
 
 let api: FakeApi;
 
-function renderDelete(url = `/d/${ID}#${TOKEN}`) {
-  return render(
+function renderDelete(url = `/d/${ID}#${TOKEN}`, { strict = false } = {}) {
+  const tree = (
     <MemoryRouter initialEntries={[url]}>
       <AppProviders>
         <Routes>
@@ -27,8 +28,9 @@ function renderDelete(url = `/d/${ID}#${TOKEN}`) {
           <Route path="/" element={<h1>Home</h1>} />
         </Routes>
       </AppProviders>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
+  return render(strict ? <StrictMode>{tree}</StrictMode> : tree);
 }
 
 function sent(): string[] {
@@ -130,7 +132,7 @@ describe('delete route, checking and confirming', () => {
     expect(screen.getByRole('button', { name: 'Delete paste' })).not.toHaveAttribute(
       'aria-disabled',
     );
-    expect(screen.getByRole('button', { name: 'Keep it' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keep it' })).not.toHaveAttribute('aria-disabled');
     expect(sent()).toEqual([`GET ${PASTE}`]);
   });
 
@@ -139,6 +141,29 @@ describe('delete route, checking and confirming', () => {
     renderDelete();
 
     expect(await screen.findByText('Unlimited views')).toBeInTheDocument();
+  });
+
+  it('sends one peek on load under StrictMode', async () => {
+    api.reply('GET', PASTE, peekReply());
+    renderDelete(undefined, { strict: true });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Delete this paste?' }),
+    ).toBeInTheDocument();
+    expect(sent()).toEqual([`GET ${PASTE}`]);
+  });
+
+  it('sends one more peek per Try again under StrictMode', async () => {
+    const user = userEvent.setup();
+    api.reply('GET', PASTE, 'network-error', peekReply());
+    renderDelete(undefined, { strict: true });
+
+    await user.click(await screen.findByRole('button', { name: 'Try again' }));
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Delete this paste?' }),
+    ).toBeInTheDocument();
+    expect(sent()).toEqual([`GET ${PASTE}`, `GET ${PASTE}`]);
   });
 
   it('Keep it goes home and deletes nothing', async () => {
@@ -167,6 +192,22 @@ describe('delete route, deleting', () => {
 
     expect(sent()).toEqual([`GET ${PASTE}`, `DELETE ${PASTE}`]);
     expect(api.calls[1]?.headers.get('X-Delete-Token')).toBe(TOKEN);
+  });
+
+  it('holds Keep it while the DELETE is in flight, so leaving cannot hide the outcome', async () => {
+    const user = userEvent.setup();
+    api.reply('GET', PASTE, peekReply());
+    api.reply('DELETE', PASTE, 'hang');
+    renderDelete();
+
+    await confirmDeletion(user);
+    const keep = screen.getByRole('button', { name: 'Keep it' });
+    expect(keep).toHaveAttribute('aria-disabled', 'true');
+    await user.click(keep);
+
+    expect(screen.queryByRole('heading', { level: 1, name: 'Home' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Deleting...' })).toBeInTheDocument();
+    expect(sent()).toEqual([`GET ${PASTE}`, `DELETE ${PASTE}`]);
   });
 
   it('confirms a 204 with the success page', async () => {

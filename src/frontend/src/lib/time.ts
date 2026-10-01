@@ -7,7 +7,6 @@ const MINUTES_BELOW_SECONDS = 3_570;
 const HOURS_BELOW_SECONDS = 129_600;
 const MILLISECOND_DIGITS = 3;
 
-export const EXPIRED_PHRASE = 'expired';
 export const EXPIRED_LABEL = 'Expired';
 export const UNDER_A_MINUTE_PHRASE = 'in less than a minute';
 
@@ -45,11 +44,8 @@ export function isPast(target: Date, now: Date): boolean {
   return target.getTime() <= now.getTime();
 }
 
-export function formatRelative(target: Date, now: Date): string {
+function relativePhrase(target: Date, now: Date): string {
   const seconds = (target.getTime() - now.getTime()) / SECOND_MS;
-  if (seconds <= 0) {
-    return EXPIRED_PHRASE;
-  }
   if (seconds < MINUTE_SECONDS) {
     return UNDER_A_MINUTE_PHRASE;
   }
@@ -63,7 +59,7 @@ export function formatRelative(target: Date, now: Date): string {
 }
 
 export function formatExpiryLabel(target: Date, now: Date): string {
-  return isPast(target, now) ? EXPIRED_LABEL : `Expires ${formatRelative(target, now)}`;
+  return isPast(target, now) ? EXPIRED_LABEL : `Expires ${relativePhrase(target, now)}`;
 }
 
 export function formatAbsolute(date: Date, timeZone?: string): string {

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { deleteLink, deleteTarget, shareLink } from './links';
+import { createdPaste, deleteLink, shareLink } from './links';
 
 const ORIGIN = 'https://securepaste.app';
 const ID = 'x7k2mn4pq9rs';
 const KEY = 'xCCvY4XmaJj_jCT8M5S78fgy1X4fvzuxtYPqsh_N4Jw';
 const DELETE_TOKEN = 'Xcmid5zrf-0Cn-W2Mh_yzNeCJTTY4bmz7jBr3lRgSnU';
+const EXPIRES_AT = '2026-08-04T18:32:00.1234567+00:00';
 
 describe('result links', () => {
   it('puts the key and the delete token after the #', () => {
@@ -16,14 +17,16 @@ describe('result links', () => {
     );
   });
 
-  it('reads the id and the token back out of a delete link', () => {
-    expect(deleteTarget(deleteLink(ORIGIN, ID, DELETE_TOKEN))).toEqual({
+  it('keeps the id and the token exactly as the server sent them, beside the links', () => {
+    const response = { id: ID, deleteToken: DELETE_TOKEN, expiresAt: EXPIRES_AT };
+
+    expect(createdPaste('http://localhost:3000', response, KEY, 5)).toEqual({
       id: ID,
       deleteToken: DELETE_TOKEN,
-    });
-    expect(deleteTarget(deleteLink('http://localhost:3000', ID, DELETE_TOKEN))).toEqual({
-      id: ID,
-      deleteToken: DELETE_TOKEN,
+      shareLink: `http://localhost:3000/p/${ID}#${KEY}`,
+      deleteLink: `http://localhost:3000/d/${ID}#${DELETE_TOKEN}`,
+      expiresAt: new Date('2026-08-04T18:32:00.123Z'),
+      maxViews: 5,
     });
   });
 });

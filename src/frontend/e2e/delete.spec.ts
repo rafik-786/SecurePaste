@@ -117,5 +117,7 @@ for (const viewport of [
       .evaluate((element) => element.parentElement?.getBoundingClientRect().height);
 
     expect(after).toBe(before);
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(viewport.width);
   });
 }

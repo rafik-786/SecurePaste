@@ -30,6 +30,8 @@ const QUESTION = 'Delete this paste now? The share link will show that it is gon
 
 function pasteExpiringIn(ms: number, maxViews: number | null = 1): CreatedPaste {
   return {
+    id: PASTE_ID,
+    deleteToken: DELETE_TOKEN,
     shareLink: SHARE_LINK,
     deleteLink: DELETE_LINK,
     expiresAt: new Date(Date.now() + ms),
@@ -320,7 +322,8 @@ describe('delete from the result panel', () => {
         `The server answered with an error. Try again, or let it expire on its own at ${formatAbsolute(expiresAt)}.`,
     },
   ])('explains $name, brings the confirm row back and never retries', async (failure) => {
-    const user = userEvent.setup();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
     fetchMock.mockImplementationOnce(async () => failure.reply());
     const { paste } = renderResult();
 
@@ -336,7 +339,9 @@ describe('delete from the result panel', () => {
     expect(alert.compareDocumentPosition(deletePaste) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+    });
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     deletePaste.focus();
@@ -371,5 +376,60 @@ describe('delete from the result panel', () => {
     await user.click(deletePaste);
     expect(await screen.findByRole('group', { name: 'Paste deleted' })).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps Delete paste held after a 429 when the author cancels and asks again', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
+    fetchMock.mockResolvedValueOnce(problemResponse(429, undefined, { 'Retry-After': '20' }));
+    renderResult();
+    await confirmDelete(user);
+    await expectFocus(await screen.findByRole('group', { name: 'Too many requests' }));
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Delete now' })).toHaveFocus();
+    expect(screen.queryByRole('group', { name: 'Too many requests' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete now' }));
+
+    const deletePaste = screen.getByRole('button', { name: 'Delete paste' });
+    expect(deletePaste).toHaveFocus();
+    expect(deletePaste).toHaveAttribute('aria-disabled', 'true');
+    const alert = screen.getByRole('group', { name: 'Too many requests' });
+    expect(alert).toHaveTextContent(/You can try again in (20|19|18) seconds\./);
+    expect(alert).not.toHaveAttribute('tabindex');
+    await user.click(deletePaste);
+    deletePaste.focus();
+    await user.keyboard('{Enter}');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
+    expect(alert).toHaveTextContent('You can try again now.');
+    expect(deletePaste).not.toHaveAttribute('aria-disabled');
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await user.click(deletePaste);
+    expect(await screen.findByRole('group', { name: 'Paste deleted' })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks plainly again once the countdown has run out behind a cancelled confirm row', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
+    fetchMock.mockResolvedValueOnce(problemResponse(429, undefined, { 'Retry-After': '5' }));
+    renderResult();
+    await confirmDelete(user);
+    await screen.findByRole('group', { name: 'Too many requests' });
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    act(() => {
+      vi.advanceTimersByTime(5_000);
+    });
+    await user.click(screen.getByRole('button', { name: 'Delete now' }));
+
+    expect(screen.queryByRole('group', { name: 'Too many requests' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete paste' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
   });
 });

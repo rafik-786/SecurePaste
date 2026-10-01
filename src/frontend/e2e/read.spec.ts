@@ -7,6 +7,7 @@ import {
   PASTE_PATH,
   claim,
   gate,
+  hoursFromNow,
   lastClipboardWrite,
   mockApi,
   peek,
@@ -400,11 +401,163 @@ for (const viewport of [
     const after = await reveal.evaluate((element) => {
       const body = element.parentElement;
       return {
-        height: body?.getBoundingClientRect().height,
-        content: body ? body.scrollHeight : 0,
+        height: body?.getBoundingClientRect().height ?? 0,
+        content: body ? body.scrollHeight : Infinity,
       };
     });
 
     expect(after.height).toBe(before);
+    expect(
+      after.content,
+      'the interstitial copy overflows its reserved height',
+    ).toBeLessThanOrEqual(Math.ceil(after.height));
+  });
+}
+
+for (const width of [320, 375]) {
+  for (const state of ['opened', 'destroyed', 'expired'] as const) {
+    test(`at ${width}px the ${state} code toolbar fits the screen with every label on one line`, async ({
+      page,
+      context,
+    }) => {
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+      await page.setViewportSize({ width, height: 800 });
+      const paste = await sealPaste(BASH_CONTENT, 'bash');
+      const views = state === 'destroyed' ? 1 : 5;
+      await mockApi(page, {
+        [`GET ${PASTE_PATH}`]: [peek(views, paste.sizeBytes)],
+        [`POST ${CLAIM_PATH}`]: [
+          () =>
+            Promise.resolve({
+              status: 200,
+              body: {
+                ciphertext: paste.ciphertext,
+                remainingViews: views - 1,
+                expiresAt:
+                  state === 'expired'
+                    ? new Date(Date.now() + 1_500).toISOString()
+                    : hoursFromNow(23),
+              },
+            }),
+        ],
+      });
+
+      await page.goto(`/p/${PASTE_ID}#${paste.key}`);
+      await page
+        .getByRole('button', { name: views === 1 ? 'Reveal and destroy' : 'Reveal paste' })
+        .click();
+      await expect(
+        page.getByRole('region', { name: 'Paste content, Bash, 3 lines' }),
+      ).toBeVisible();
+      const strip = {
+        opened: '4 views left',
+        destroyed: 'That was the last view',
+        expired: 'Only the copy on this screen remains',
+      }[state];
+      await expect(page.getByText(strip)).toBeVisible({ timeout: 10_000 });
+
+      const measure = () =>
+        page.evaluate(() => {
+          const box = (element: Element | null | undefined) => {
+            const rect = element?.getBoundingClientRect();
+            return {
+              left: rect?.left ?? NaN,
+              right: rect?.right ?? NaN,
+              top: rect?.top ?? NaN,
+              height: rect?.height ?? NaN,
+              width: rect?.width ?? NaN,
+            };
+          };
+          return {
+            scrollWidth: document.documentElement.scrollWidth,
+            buttons: [...document.querySelectorAll('figure button')].map((button) => ({
+              name: button.querySelector('span > span:not([aria-hidden])')?.textContent ?? '',
+              box: box(button),
+              icon: box(button.querySelector('svg')),
+              label: box(button.querySelector('span > span:not([aria-hidden])')),
+              labels: [...button.querySelectorAll('span > span')].map((label) => box(label).height),
+              fontSize: parseFloat(getComputedStyle(button).fontSize),
+            })),
+          };
+        });
+
+      const layout = await measure();
+      expect(layout.scrollWidth).toBeLessThanOrEqual(width);
+      expect(layout.buttons).toHaveLength(3);
+      for (const { name, box, icon, label, labels, fontSize } of layout.buttons) {
+        expect(box.left, name).toBeGreaterThanOrEqual(0);
+        expect(box.right, name).toBeLessThanOrEqual(width);
+        for (const height of labels) {
+          expect(height, `${name}: a label wrapped`).toBeLessThan(1.5 * fontSize);
+        }
+        expect(label.left - icon.right, `${name}: icon to label`).toBeCloseTo(8, 0);
+        const offCentre = label.top + label.height / 2 - (box.top + box.height / 2);
+        expect(Math.abs(offCentre), `${name}: label off centre`).toBeLessThanOrEqual(1);
+      }
+
+      const copyWidth = layout.buttons[2]?.box.width;
+      await page.getByRole('button', { name: 'Copy', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Copied' })).toBeVisible();
+      const copied = await measure();
+      expect(copied.buttons[2]?.box.width).toBe(copyWidth);
+      expect(copied.scrollWidth).toBeLessThanOrEqual(width);
+    });
+  }
+}
+
+for (const viewport of [
+  { width: 641, height: 900 },
+  { width: 700, height: 900 },
+  { width: 800, height: 900 },
+  { width: 1024, height: 900 },
+  { width: 375, height: 812 },
+]) {
+  test(`at ${viewport.width}px the sealed strip draws rules only between items on one line`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    const paste = await sealPaste(BASH_CONTENT, 'bash');
+    await mockApi(page, { [`GET ${PASTE_PATH}`]: [peek(1, paste.sizeBytes)] });
+
+    await page.goto(`/p/${PASTE_ID}#${paste.key}`);
+    const word = page.getByText('Sealed', { exact: true });
+    await expect(word).toBeVisible();
+
+    const items = await word.evaluate((element) => {
+      const clipLeft = (item: Element): number => {
+        for (let node = item.parentElement; node; node = node.parentElement) {
+          const style = getComputedStyle(node);
+          if (style.overflowX !== 'visible') {
+            return node.getBoundingClientRect().left + parseFloat(style.borderLeftWidth);
+          }
+        }
+        return -Infinity;
+      };
+      const siblings = [...(element.parentElement?.parentElement?.children ?? [])];
+      return siblings.map((item) => {
+        const rect = item.getBoundingClientRect();
+        const rule = parseFloat(getComputedStyle(item).borderLeftWidth);
+        return {
+          text: item.textContent,
+          top: Math.round(rect.top),
+          visibleRule: rule > 0 && rect.left >= clipLeft(item),
+        };
+      });
+    });
+
+    expect(items.map(({ text }) => text)).toEqual([
+      'Sealed',
+      '1 view left',
+      'Expires in 23 hours',
+      `${paste.sizeBytes} bytes encrypted`,
+    ]);
+    const mobile = viewport.width <= 640;
+    items.forEach((item, index) => {
+      const startsLine = index === 0 || item.top > (items[index - 1]?.top ?? 0);
+      expect(item.visibleRule, item.text).toBe(!mobile && !startsLine);
+    });
+    if (viewport.width === 641) {
+      expect(new Set(items.map(({ top }) => top)).size, 'the strip wraps at 641px').toBe(2);
+    }
   });
 }

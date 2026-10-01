@@ -25,16 +25,18 @@ export function SealStrip({ state, items, className }: SealStripProps) {
 
   return (
     <div className={cx(styles.strip, styles[state], className)}>
-      <span className={styles.item}>
-        <Icon />
-        <span>{word}</span>
+      <span className={styles.items}>
+        <span className={styles.item}>
+          <Icon />
+          <span>{word}</span>
+        </span>
+        {items.map((item, index) => (
+          <Fragment key={index}>
+            {' '}
+            <span className={styles.item}>{item}</span>
+          </Fragment>
+        ))}
       </span>
-      {items.map((item, index) => (
-        <Fragment key={index}>
-          {' '}
-          <span className={styles.item}>{item}</span>
-        </Fragment>
-      ))}
     </div>
   );
 }

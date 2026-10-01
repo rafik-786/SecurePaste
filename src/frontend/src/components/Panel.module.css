@@ -12,4 +12,14 @@
   .body {
     padding: var(--space-4);
   }
+
+  .fullBleed {
+    margin-inline: calc(-1 * var(--gutter));
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .fullBleed > :first-child {
+    border-radius: 0;
+  }
 }

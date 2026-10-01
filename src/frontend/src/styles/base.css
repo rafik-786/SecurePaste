@@ -68,7 +68,8 @@ h2 {
   }
 }
 
-main:focus {
+/* Headings, alerts and main take focus only from script; a ring there boxes text nobody can act on. */
+[tabindex='-1']:not(a, button, input, select, textarea, summary):focus {
   outline: none;
 }
 
@@ -102,7 +103,8 @@ table {
   border-collapse: collapse;
 }
 
-a {
+/* Zero specificity: a component class on a link, such as a link styled as a button, wins in every state. */
+:where(a) {
   color: var(--color-accent);
   text-decoration-line: underline;
   text-decoration-thickness: from-font;
@@ -111,7 +113,7 @@ a {
 }
 
 @media (hover: hover) {
-  a:hover {
+  :where(a:hover) {
     color: var(--color-accent-hover);
   }
 }

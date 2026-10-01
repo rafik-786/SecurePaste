@@ -7,7 +7,6 @@ import {
   clearStoredTheme,
   effectiveTheme,
   oppositeTheme,
-  readStoredTheme,
   storeTheme,
   subscribeToTheme,
   systemTheme,
@@ -33,32 +32,29 @@ describe('stored choice', () => {
     expect(THEME_STORAGE_KEY).toBe('securepaste.theme');
   });
 
-  it('round-trips light and dark', () => {
+  it('stores and clears light and dark', () => {
     storeTheme('dark');
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
-    expect(readStoredTheme()).toBe('dark');
+    storeTheme('light');
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
 
     clearStoredTheme();
-    expect(readStoredTheme()).toBeUndefined();
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
-  it('ignores a value it did not write', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'sepia');
-
-    expect(readStoredTheme()).toBeUndefined();
-  });
-
-  it('follows the system when storage throws', () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new DOMException('denied', 'SecurityError');
-    });
+  it('does not throw when storage throws', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError');
     });
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
 
-    expect(readStoredTheme()).toBeUndefined();
     expect(() => {
       storeTheme('dark');
+    }).not.toThrow();
+    expect(() => {
+      clearStoredTheme();
     }).not.toThrow();
   });
 });

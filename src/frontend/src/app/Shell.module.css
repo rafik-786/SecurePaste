@@ -4,6 +4,7 @@
   margin-inline: auto;
   padding-inline: var(--gutter);
   flex: 1 0 auto;
+  min-block-size: calc(100dvh - var(--header-height));
   padding-block: var(--space-7);
 }
 

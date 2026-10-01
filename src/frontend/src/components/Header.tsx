@@ -2,7 +2,7 @@ import type { MouseEvent } from 'react';
 import { Link, NavLink } from 'react-router';
 import { useConfirmLeave } from '../hooks/leaveGuard';
 import { cx } from '../lib/classNames';
-import { PRODUCT_NAME } from '../hooks/useDocumentTitle';
+import { PRODUCT_NAME } from '../lib/product';
 import { LockIcon } from './icons/icons';
 import { ThemeToggle } from './ThemeToggle';
 import styles from './Header.module.css';

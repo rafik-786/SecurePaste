@@ -9,9 +9,11 @@ import {
   parseKey,
   PayloadTooLargeError,
 } from './crypto';
-import { IV_BYTES, KEY_BYTES, MAX_CIPHERTEXT_BYTES, MAX_PAYLOAD_BYTES, TAG_BYTES } from './limits';
+import { errorChainMessages, leakedFragments } from './errorChain.test-support';
+import { IV_BYTES, KEY_BYTES, MAX_CIPHERTEXT_BYTES, TAG_BYTES } from './limits';
 import { payloadByteSize, type PastePayload } from './payload';
 
+const MAX_PAYLOAD_BYTES = MAX_CIPHERTEXT_BYTES - IV_BYTES - TAG_BYTES;
 const KEY_TEXT_LENGTH = 43;
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
 const SAMPLE: PastePayload = { content: 'DB_PASSWORD=hunter2', language: 'bash' };
@@ -156,6 +158,28 @@ describe('encryptPaste and decryptPaste', () => {
     await expect(
       decryptPaste(encodeBase64(blob), await parseKey(encodeBase64Url(rawKey))),
     ).rejects.toBeInstanceOf(DecryptionError);
+  });
+
+  it('keeps authentic plaintext that is not JSON out of the whole error chain', async () => {
+    const plaintext = 'DB_PASSWORD=Zq9xV7kP';
+    const rawKey = crypto.getRandomValues(new Uint8Array(KEY_BYTES));
+    const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+    const key = await crypto.subtle.importKey('raw', rawKey, 'AES-GCM', false, ['encrypt']);
+    const sealed = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      new TextEncoder().encode(plaintext),
+    );
+    const blob = new Uint8Array([...iv, ...new Uint8Array(sealed)]);
+
+    const thrown: unknown = await decryptPaste(
+      encodeBase64(blob),
+      await parseKey(encodeBase64Url(rawKey)),
+    ).catch((error: unknown) => error);
+
+    expect(thrown).toBeInstanceOf(DecryptionError);
+    expect(thrown).toHaveProperty('cause.name', 'InvalidPayloadError');
+    expect(leakedFragments(errorChainMessages(thrown), plaintext)).toEqual([]);
   });
 
   it('reports one message and a stable code, whatever went wrong', async () => {

@@ -1,17 +1,14 @@
-import type { ApiError } from '../../api/errors';
-import { Countdown } from '../../components/Countdown';
 import {
   AlertIcon,
   CheckIcon,
-  ClockIcon,
   FlameIcon,
   OfflineIcon,
   UnlinkIcon,
 } from '../../components/icons/icons';
 import { StatusPage } from '../../components/StatusPage';
-import { useCountdown } from '../../hooks/useCountdown';
-import { TryAgainButton } from '../paste/TryAgainButton';
 import { CreatePasteLink } from '../shared/CreatePasteLink';
+import { RateLimitedStatus } from '../shared/RateLimitedStatus';
+import { TryAgainButton } from '../shared/TryAgainButton';
 import type { DeleteStatusState } from './deleteState';
 
 export interface DeleteStatusProps {
@@ -21,11 +18,6 @@ export interface DeleteStatusProps {
 
 export interface DeleteLinkProblemStatusProps {
   readonly problem: 'invalid-id' | 'incomplete';
-}
-
-interface RateLimitedStatusProps {
-  readonly error: ApiError;
-  readonly onRetry: () => void;
 }
 
 export function DeleteLinkProblemStatus({ problem }: DeleteLinkProblemStatusProps) {
@@ -51,23 +43,6 @@ export function DeleteLinkProblemStatus({ problem }: DeleteLinkProblemStatusProp
       <p>
         The part after the # is missing or damaged. That part is the delete token, so nothing can be
         deleted without it. Copy the full delete link again from where you saved it.
-      </p>
-    </StatusPage>
-  );
-}
-
-function RateLimitedStatus({ error, onRetry }: RateLimitedStatusProps) {
-  const countdown = useCountdown(error);
-  return (
-    <StatusPage
-      icon={ClockIcon}
-      tone="warning"
-      title="Too many requests"
-      actions={<TryAgainButton onRetry={onRetry} waiting={!countdown.done} />}
-    >
-      <p>Nothing was deleted.</p>
-      <p>
-        <Countdown countdown={countdown} />
       </p>
     </StatusPage>
   );
@@ -117,7 +92,7 @@ export function DeleteStatus({ state, onRetry }: DeleteStatusProps) {
           </p>
         </StatusPage>
       );
-    case 'already-gone':
+    case 'gone':
       return (
         <StatusPage
           icon={FlameIcon}
@@ -132,7 +107,11 @@ export function DeleteStatus({ state, onRetry }: DeleteStatusProps) {
         </StatusPage>
       );
     case 'rate-limited':
-      return <RateLimitedStatus error={state.error} onRetry={onRetry} />;
+      return (
+        <RateLimitedStatus error={state.error} onRetry={onRetry}>
+          Nothing was deleted.
+        </RateLimitedStatus>
+      );
     case 'check-failed':
       return state.cause === 'network' ? (
         <StatusPage

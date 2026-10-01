@@ -2,7 +2,7 @@ export const MAX_CIPHERTEXT_BYTES = 262_144;
 export const IV_BYTES = 12;
 export const TAG_BYTES = 16;
 export const KEY_BYTES = 32;
-export const MAX_PAYLOAD_BYTES = MAX_CIPHERTEXT_BYTES - IV_BYTES - TAG_BYTES;
+export const DELETE_TOKEN_BYTES = 32;
 
 export const MIN_VIEWS = 1;
 export const MAX_VIEWS = 100;

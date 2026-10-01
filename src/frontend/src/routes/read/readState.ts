@@ -1,10 +1,12 @@
 import type { ApiError } from '../../api/errors';
 import type { ClaimResponse, PeekResponse } from '../../api/types';
 import type { PastePayload } from '../../lib/payload';
+import { isBase64UrlOfLength } from '../../lib/base64';
 import { DEFAULT_LANGUAGE, isKnownLanguage, type LanguageId } from '../../lib/languages';
+import { KEY_BYTES } from '../../lib/limits';
 import { isValidPasteId } from '../../lib/pasteId';
 import { parseInstant } from '../../lib/time';
-import { failureKind, isWellFormedSecret, type FailureCause } from '../paste/linkChecks';
+import { failureState, type FailureState } from '../shared/failureState';
 
 export type ReadLinkCheck = 'unsupported' | 'invalid-id' | 'incomplete' | 'ready';
 
@@ -34,11 +36,7 @@ export type ReadState =
   | { readonly kind: 'opening' }
   | { readonly kind: 'open'; readonly paste: OpenedPaste }
   | { readonly kind: 'incomplete' }
-  | { readonly kind: 'not-found' }
-  | { readonly kind: 'gone' }
-  | { readonly kind: 'rate-limited'; readonly error: ApiError }
-  | { readonly kind: 'check-failed'; readonly cause: FailureCause }
-  | { readonly kind: 'reveal-failed'; readonly cause: FailureCause }
+  | FailureState<'check-failed' | 'reveal-failed'>
   | { readonly kind: 'corrupted'; readonly remainingViews: number | null };
 
 export type ReadStatusState = Exclude<
@@ -60,7 +58,7 @@ export function readLinkCheck(
   if (!isValidPasteId(id)) {
     return 'invalid-id';
   }
-  return isWellFormedSecret(fragmentKey) ? 'ready' : 'incomplete';
+  return isBase64UrlOfLength(fragmentKey, KEY_BYTES) ? 'ready' : 'incomplete';
 }
 
 export function sealedPeek(peek: PeekResponse, remainingViews: number): SealedPeek {
@@ -74,22 +72,6 @@ export function openedPaste(payload: PastePayload, claim: ClaimResponse): Opened
     remainingViews: claim.remainingViews,
     expiresAt: parseInstant(claim.expiresAt),
   };
-}
-
-function failureState(error: ApiError, failed: 'check-failed' | 'reveal-failed'): ReadState {
-  switch (failureKind(error)) {
-    case 'not-found':
-      return { kind: 'not-found' };
-    case 'gone':
-      return { kind: 'gone' };
-    case 'rate-limited':
-      return { kind: 'rate-limited', error };
-    case 'network':
-      return { kind: failed, cause: 'network' };
-    case 'forbidden':
-    case 'server':
-      return { kind: failed, cause: 'server' };
-  }
 }
 
 export function peekFailureState(error: ApiError): ReadState {

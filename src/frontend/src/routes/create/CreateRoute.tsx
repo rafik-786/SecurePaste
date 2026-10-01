@@ -7,11 +7,15 @@ import { CreateForm } from './CreateForm';
 import { DEFAULT_OPTIONS, type CreateOptions } from './formOptions';
 import { CreateResult } from './CreateResult';
 import type { CreatedPaste } from './links';
+import { useForgetOnPageHide } from './useForgetOnPageHide';
 
 function CreatePage({ focusContentOnLoad }: { readonly focusContentOnLoad: boolean }) {
   const [options, setOptions] = useState<CreateOptions>(DEFAULT_OPTIONS);
   const [created, setCreated] = useState<CreatedPaste | undefined>(undefined);
   const [focusContent, setFocusContent] = useState(focusContentOnLoad);
+  useForgetOnPageHide(() => {
+    setCreated(undefined);
+  });
 
   return (
     <>

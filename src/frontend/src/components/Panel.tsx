@@ -5,15 +5,26 @@ import styles from './Panel.module.css';
 export interface PanelProps {
   readonly strip?: ReactNode;
   readonly children?: ReactNode;
+  readonly fullBleed?: boolean;
   readonly className?: string | undefined;
   readonly bodyClassName?: string | undefined;
 }
 
-export function Panel({ strip, children, className, bodyClassName }: PanelProps) {
+export function Panel({
+  strip,
+  children,
+  fullBleed = false,
+  className,
+  bodyClassName,
+}: PanelProps) {
   return (
-    <div className={cx(styles.panel, className)}>
+    <div className={cx(styles.panel, fullBleed && styles.fullBleed, className)}>
       {strip}
-      {children !== undefined && <div className={cx(styles.body, bodyClassName)}>{children}</div>}
+      {fullBleed
+        ? children
+        : children !== undefined && (
+            <div className={cx(styles.body, bodyClassName)}>{children}</div>
+          )}
     </div>
   );
 }

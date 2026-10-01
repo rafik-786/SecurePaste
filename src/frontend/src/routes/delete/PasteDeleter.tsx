@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { deletePaste, peekPaste } from '../../api/client';
 import { requestFailure } from '../../api/request';
+import type { PeekResponse } from '../../api/types';
 import { ActionRow } from '../../components/ActionRow';
 import { Button } from '../../components/Button';
 import { ExpiryTime } from '../../components/ExpiryTime';
@@ -10,9 +11,9 @@ import { PageHeading } from '../../components/PageHeading';
 import { Panel } from '../../components/Panel';
 import { SealStrip } from '../../components/SealStrip';
 import { useNow } from '../../hooks/useNow';
-import { useRequestSignal } from '../../hooks/useRequestSignal';
 import { viewsLeftLabel } from '../../lib/format';
-import { PasteSkeleton } from '../paste/PasteSkeleton';
+import { PasteSkeleton } from '../shared/PasteSkeleton';
+import { usePeekAttempt } from '../shared/usePeekAttempt';
 import {
   CHECKING,
   DELETED,
@@ -71,7 +72,7 @@ function ConfirmPanel({ paste, deleting, onDelete, onKeep }: ConfirmPanelProps) 
         >
           Delete paste
         </Button>
-        <Button variant="ghost" onClick={onKeep}>
+        <Button variant="ghost" disabled={deleting} onClick={onKeep}>
           Keep it
         </Button>
       </ActionRow>
@@ -81,37 +82,23 @@ function ConfirmPanel({ paste, deleting, onDelete, onKeep }: ConfirmPanelProps) 
 
 export function PasteDeleter({ id, deleteToken }: PasteDeleterProps) {
   const navigate = useNavigate();
-  const nextSignal = useRequestSignal();
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<DeleteState>(CHECKING);
   const deleting = useRef(false);
-
-  useEffect(() => {
-    const stale = new AbortController();
-    const isStale = () => stale.signal.aborted;
-
-    void peekPaste(id, nextSignal()).then(
-      (peek) => {
-        if (!isStale()) {
-          setState({ kind: 'confirm', paste: deletablePaste(peek), deleting: false });
-        }
-      },
-      (error: unknown) => {
+  const { state, setState, nextSignal, retry } = usePeekAttempt<DeleteState>(
+    CHECKING,
+    async (attempt) => {
+      let peek: PeekResponse;
+      try {
+        peek = await peekPaste(id, attempt.nextSignal());
+      } catch (error) {
         const failure = requestFailure(error);
-        if (!isStale() && failure) {
-          setState(peekFailureState(failure));
+        if (failure) {
+          attempt.settle(peekFailureState(failure));
         }
-      },
-    );
-    return () => {
-      stale.abort();
-    };
-  }, [attempt, id, nextSignal]);
-
-  const retry = useCallback(() => {
-    setState(CHECKING);
-    setAttempt((previous) => previous + 1);
-  }, []);
+        return;
+      }
+      attempt.settle({ kind: 'confirm', paste: deletablePaste(peek), deleting: false });
+    },
+  );
 
   switch (state.kind) {
     case 'checking':

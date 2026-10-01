@@ -40,12 +40,18 @@ function saveAsFile(content: string, fileName: string): void {
   URL.revokeObjectURL(url);
 }
 
+interface HighlightedLines {
+  readonly content: string;
+  readonly language: LanguageId;
+  readonly lines: readonly string[];
+}
+
 function useHighlightedLines(
   content: string,
   language: LanguageId,
   enabled: boolean,
 ): readonly string[] | null {
-  const [highlighted, setHighlighted] = useState<readonly string[] | null>(null);
+  const [highlighted, setHighlighted] = useState<HighlightedLines | null>(null);
 
   useEffect(() => {
     if (!enabled) {
@@ -54,7 +60,7 @@ function useHighlightedLines(
     let current = true;
     void highlight(content, language).then((html) => {
       if (current) {
-        setHighlighted(splitHighlightedLines(html));
+        setHighlighted({ content, language, lines: splitHighlightedLines(html) });
       }
     });
     return () => {
@@ -62,7 +68,8 @@ function useHighlightedLines(
     };
   }, [content, language, enabled]);
 
-  return highlighted;
+  const matches = enabled && highlighted?.content === content && highlighted.language === language;
+  return matches ? highlighted.lines : null;
 }
 
 export function CodeViewer({ pasteId, content, language, regionRef }: CodeViewerProps) {
@@ -74,6 +81,8 @@ export function CodeViewer({ pasteId, content, language, regionRef }: CodeViewer
   const decision = useMemo(() => highlightDecision(language, content), [language, content]);
   const highlighted = useHighlightedLines(content, language, decision === 'highlight');
   const note = capNote(decision);
+  // A zero-width illegal match (CSS attribute selectors, also inside an XML <style>) makes
+  // highlight.js write LF for the CR, U+2028 or U+2029 it skips, which would renumber the lines.
   const lines = highlighted?.length === plainLines.length ? highlighted : plainLines;
   const lineCount = formatLineCount(lines.length);
 

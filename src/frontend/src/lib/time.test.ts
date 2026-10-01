@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   EXPIRED_LABEL,
-  EXPIRED_PHRASE,
   formatAbsolute,
   formatExpiryLabel,
-  formatRelative,
   isInstant,
   isPast,
   parseInstant,
@@ -20,7 +18,7 @@ const DAY = 24 * HOUR;
 const later = (ms: number) => new Date(NOW.getTime() + ms);
 const plainSpaces = (text: string) => text.replace(/\s/g, ' ');
 
-describe('formatRelative', () => {
+describe('formatExpiryLabel', () => {
   it.each([
     {
       name: 'a 15 minute paste at creation',
@@ -42,14 +40,10 @@ describe('formatRelative', () => {
     { name: '6 days 11 hours', offset: 6 * DAY + 11 * HOUR, expected: 'in 6 days' },
     { name: '59 seconds', offset: 59 * SECOND, expected: UNDER_A_MINUTE_PHRASE },
     { name: 'one millisecond', offset: 1, expected: UNDER_A_MINUTE_PHRASE },
-    { name: 'the expiry instant itself', offset: 0, expected: EXPIRED_PHRASE },
-    { name: 'a past expiry', offset: -MINUTE, expected: EXPIRED_PHRASE },
-  ])('describes $name as "$expected"', ({ offset, expected }) => {
-    expect(formatRelative(later(offset), NOW)).toBe(expected);
+  ])('describes $name as "Expires $expected"', ({ offset, expected }) => {
+    expect(formatExpiryLabel(later(offset), NOW)).toBe(`Expires ${expected}`);
   });
-});
 
-describe('formatExpiryLabel', () => {
   it('leads with Expires while time remains', () => {
     expect(formatExpiryLabel(later(23 * HOUR), NOW)).toBe('Expires in 23 hours');
     expect(formatExpiryLabel(later(30 * SECOND), NOW)).toBe('Expires in less than a minute');
@@ -57,6 +51,7 @@ describe('formatExpiryLabel', () => {
 
   it('reads Expired, capitalised for the start of a strip item, once the instant passes', () => {
     expect(formatExpiryLabel(later(0), NOW)).toBe(EXPIRED_LABEL);
+    expect(formatExpiryLabel(later(-MINUTE), NOW)).toBe(EXPIRED_LABEL);
     expect(formatExpiryLabel(later(-DAY), NOW)).toBe('Expired');
   });
 });

@@ -126,3 +126,14 @@ export function encodeBase64Url(bytes: Uint8Array): string {
 export function decodeBase64Url(text: string): Uint8Array<ArrayBuffer> {
   return decodeUnpadded(text, URL_SAFE);
 }
+
+export function isBase64UrlOfLength(text: unknown, byteLength: number): text is string {
+  if (typeof text !== 'string') {
+    return false;
+  }
+  try {
+    return decodeBase64Url(text).byteLength === byteLength;
+  } catch {
+    return false;
+  }
+}

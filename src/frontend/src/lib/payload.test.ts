@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { errorChainMessages, leakedFragments } from './errorChain.test-support';
 import {
   InvalidPayloadError,
   parsePayload,
@@ -89,4 +90,24 @@ describe('parsePayload', () => {
       expect.objectContaining({ name: 'InvalidPayloadError', code: 'invalid-payload' }),
     );
   });
+
+  it.each([
+    { name: 'text that is not JSON', plaintext: 'DB_PASSWORD=Zq9xV7kP' },
+    { name: 'an unquoted value', plaintext: '{"content":DB_PASSWORD_Zq9xV7kP}' },
+    { name: 'truncated JSON', plaintext: '{"content":"DB_PASSWORD=Zq9xV7kP' },
+  ])('keeps the plaintext out of every error it throws for $name', ({ plaintext }) => {
+    const thrown = captureError(() => parsePayload(encoder.encode(plaintext)));
+
+    expect(thrown).toBeInstanceOf(InvalidPayloadError);
+    expect(leakedFragments(errorChainMessages(thrown), plaintext)).toEqual([]);
+  });
 });
+
+function captureError(action: () => unknown): unknown {
+  try {
+    action();
+  } catch (error) {
+    return error;
+  }
+  throw new Error('Expected the action to throw.');
+}

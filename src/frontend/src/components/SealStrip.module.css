@@ -1,6 +1,5 @@
 .strip {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   min-block-size: 2.5rem;
   padding-inline: var(--space-4);
@@ -13,22 +12,24 @@
   letter-spacing: var(--tracking-wide);
 }
 
+/* Every item draws its rule on its leading edge, pulled 1px outside itself. The row clips that 1px,
+   so whichever item starts a line, the first one or one that wrapped, shows no rule. */
+.items {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  min-inline-size: 0;
+  margin-inline: calc(-1 * var(--space-3));
+  overflow: clip;
+}
+
 .item {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding-inline: var(--space-3);
-}
-
-.item:first-child {
-  padding-inline-start: 0;
-}
-
-.item:last-child {
-  padding-inline-end: 0;
-}
-
-.item + .item {
+  margin-inline-start: calc(-1 * var(--border-hairline));
+  padding-inline: var(--space-3) calc(var(--space-3) + var(--border-hairline));
   border-inline-start: var(--border-hairline) solid var(--color-border-subtle);
 }
 
@@ -58,17 +59,17 @@
 
 @media (max-width: 40em) {
   .strip {
-    column-gap: var(--space-4);
     padding-block: var(--space-2);
   }
 
-  .item,
-  .item:first-child,
-  .item:last-child {
-    padding-inline: 0;
+  .items {
+    column-gap: var(--space-4);
+    margin-inline: 0;
   }
 
-  .item + .item {
+  .item {
+    margin-inline-start: 0;
+    padding-inline: 0;
     border-inline-start: 0;
   }
 }

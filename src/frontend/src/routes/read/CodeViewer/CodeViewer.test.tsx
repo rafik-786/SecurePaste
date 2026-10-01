@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { highlight } from '../../../lib/highlight';
@@ -16,6 +16,8 @@ const SIZE_NOTE = 'Syntax highlighting is off for pastes over 128 KB.';
 const LINE_NOTE = 'Syntax highlighting is off for lines over 10,000 characters.';
 const BASH = '# staging database\nexport DB_HOST=db.internal\nexport DB_PASSWORD=hunter2\n';
 const OBJECT_URL = 'blob:http://localhost:3000/a1b2';
+const LINE_SEPARATOR = String.fromCharCode(0x2028);
+const PARAGRAPH_SEPARATOR = String.fromCharCode(0x2029);
 
 function renderViewer(content: string, language: LanguageId = 'bash') {
   return renderWithProviders(<CodeViewer pasteId={ID} content={content} language={language} />);
@@ -277,5 +279,77 @@ describe('CodeViewer highlighting', () => {
 
     expect(screen.queryByText(SIZE_NOTE)).toBeNull();
     expect(screen.queryByText(LINE_NOTE)).toBeNull();
+  });
+});
+
+describe('CodeViewer when highlighting changes the line breaks', () => {
+  async function highlighted(): Promise<string> {
+    let html: unknown;
+    await act(async () => {
+      html = await vi.mocked(highlight).mock.results[0]?.value;
+    });
+    return typeof html === 'string' ? html : '';
+  }
+
+  it.each([
+    { name: 'CR LF in a CSS attribute selector', content: '[x\r\ny', language: 'css', lines: 2 },
+    {
+      name: 'U+2028 in a CSS attribute selector',
+      content: `[a${LINE_SEPARATOR}b`,
+      language: 'css',
+      lines: 1,
+    },
+    {
+      name: 'U+2029 in CSS inside an XML style element',
+      content: `<style>[a${PARAGRAPH_SEPARATOR}b</style>`,
+      language: 'xml',
+      lines: 1,
+    },
+  ] as const)('keeps the paste line count for $name', async ({ content, language, lines }) => {
+    renderViewer(content, language);
+
+    const html = await highlighted();
+
+    expect(html.split('\n')).toHaveLength(lines + 1);
+    expect(region()).toHaveAccessibleName(new RegExp(`, ${String(lines)} lines?$`));
+    expect(region().querySelectorAll('code > span')).toHaveLength(lines);
+    expect(region().querySelector('[class^="hljs-"]')).toBeNull();
+    expect(region().textContent).toBe(content.replace(/\r\n|\r|\n/g, ''));
+  });
+});
+
+describe('CodeViewer when its content or language changes', () => {
+  const FIRST = 'const first = 1;';
+  const SECOND = 'let second = 2;';
+
+  function holdNextHighlight() {
+    vi.mocked(highlight).mockImplementationOnce(() => new Promise<string>(() => undefined));
+  }
+
+  it('drops the previous highlighting until the new content is highlighted', async () => {
+    const { rerender } = renderViewer(FIRST, 'javascript');
+    await waitFor(() => {
+      expect(region().querySelector('.hljs-keyword')).toHaveTextContent('const');
+    });
+
+    holdNextHighlight();
+    rerender(<CodeViewer pasteId={ID} content={SECOND} language="javascript" />);
+
+    expect(region()).toHaveTextContent(SECOND);
+    expect(region()).not.toHaveTextContent(FIRST);
+    expect(region().querySelector('[class^="hljs-"]')).toBeNull();
+  });
+
+  it('drops the previous highlighting when only the language changes', async () => {
+    const { rerender } = renderViewer(FIRST, 'javascript');
+    await waitFor(() => {
+      expect(region().querySelector('.hljs-keyword')).toHaveTextContent('const');
+    });
+
+    holdNextHighlight();
+    rerender(<CodeViewer pasteId={ID} content={FIRST} language="typescript" />);
+
+    expect(region()).toHaveAccessibleName('Paste content, TypeScript, 1 line');
+    expect(region().querySelector('[class^="hljs-"]')).toBeNull();
   });
 });

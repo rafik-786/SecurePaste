@@ -12,6 +12,7 @@ import { CreateRoute } from './CreateRoute';
 import {
   CONTENT,
   createdResponse,
+  DAY_MS,
   deferred,
   DELETE_TOKEN,
   fetchMock,
@@ -299,6 +300,85 @@ describe('create form validation', () => {
     expect(viewCountField()).not.toHaveAttribute('aria-invalid');
     expect(screen.queryByText('Enter a whole number from 1 to 100.')).not.toBeInTheDocument();
   });
+
+  it.each([
+    { name: 'whitespace-only text', text: '   \n', error: 'Paste some text first.' },
+    {
+      name: 'text over the limit',
+      text: 'a'.repeat(270_000),
+      error: 'This paste is 263.8 KB after encryption. The limit is 256 KB.',
+    },
+  ])(
+    'keeps the submit button in place while it is pressed from the text area with $name',
+    async ({ text, error }) => {
+      const user = userEvent.setup();
+      renderCreate();
+      await fillContent(user, text);
+      const submit = submitButton();
+
+      await user.pointer({ keys: '[MouseLeft>]', target: submit });
+
+      expect(screen.queryByText(error)).not.toBeInTheDocument();
+      expect(contentField()).not.toHaveAttribute('aria-invalid');
+
+      await user.pointer({ keys: '[/MouseLeft]', target: submit });
+
+      expect(screen.getByText(error)).toBeInTheDocument();
+      expect(contentField()).toHaveAttribute('aria-invalid', 'true');
+      expect(contentField()).toHaveFocus();
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps the submit button in place while it is pressed from a bad view count', async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await fillContent(user);
+    await user.clear(viewCountField());
+    await user.type(viewCountField(), '0');
+    const submit = submitButton();
+
+    await user.pointer({ keys: '[MouseLeft>]', target: submit });
+
+    expect(viewCountField()).not.toHaveAttribute('aria-invalid');
+
+    await user.pointer({ keys: '[/MouseLeft]', target: submit });
+
+    expect(viewCountField()).toHaveAttribute('aria-invalid', 'true');
+    expect(viewCountField()).toHaveFocus();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the blur error once a press on submit ends somewhere else', async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await fillContent(user, ' ');
+    const submit = submitButton();
+
+    await user.pointer({ keys: '[MouseLeft>]', target: submit });
+    expect(screen.queryByText('Paste some text first.')).not.toBeInTheDocument();
+    await user.pointer({ keys: '[/MouseLeft]', target: screen.getByText('Views') });
+
+    expect(await screen.findByText('Paste some text first.')).toBeInTheDocument();
+    expect(contentField()).toHaveAttribute('aria-invalid', 'true');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the blur error when Tab moves from a bad view count onto submit', async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await fillContent(user);
+    await user.clear(viewCountField());
+    await user.type(viewCountField(), '0');
+
+    await user.tab();
+
+    expect(submitButton()).toHaveFocus();
+    await waitFor(() => {
+      expect(viewCountField()).toHaveAttribute('aria-invalid', 'true');
+    });
+    expect(screen.getByText('Enter a whole number from 1 to 100.')).toBeInTheDocument();
+  });
 });
 
 describe('create request', () => {
@@ -524,6 +604,18 @@ describe('create failures', () => {
       title: 'The server hit an error',
       lines: ['Try again in a moment. Your text is still here.'],
     },
+    {
+      name: 'a 201 whose delete token a link would rewrite',
+      reply: () =>
+        jsonResponse(201, {
+          id: PASTE_ID,
+          deleteToken: 'a b#c',
+          expiresAt: new Date(Date.now() + DAY_MS).toISOString(),
+        }),
+      variant: 'danger',
+      title: 'The server hit an error',
+      lines: ['Try again in a moment. Your text is still here.'],
+    },
   ])('explains $name in a focused alert and keeps the text', async ({ reply, title, lines }) => {
     const user = userEvent.setup();
     fetchMock.mockImplementationOnce(async () => reply());
@@ -547,6 +639,39 @@ describe('create failures', () => {
     expect(alert.compareDocumentPosition(submitButton()) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
+  });
+
+  it('says the browser could not encrypt, sends nothing and keeps the text', async () => {
+    const user = userEvent.setup();
+    const encrypt = vi
+      .spyOn(crypto.subtle, 'encrypt')
+      .mockRejectedValue(new DOMException('The operation failed', 'OperationError'));
+    renderCreate();
+    await fillContent(user);
+
+    await user.click(submitButton());
+
+    const alert = await screen.findByRole('group', {
+      name: 'This browser could not encrypt the paste',
+    });
+    expect(alert).toHaveFocus();
+    expect(
+      within(alert).getByText('Nothing was sent. Try again. Your text is still here.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('group', { name: 'The server hit an error' }),
+    ).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(contentField()).toHaveValue(CONTENT);
+    expect(contentField()).not.toHaveAttribute('readonly');
+    expect(submitButton()).not.toHaveAttribute('aria-disabled');
+
+    encrypt.mockRestore();
+    fetchMock.mockResolvedValueOnce(createdResponse());
+    await user.click(submitButton());
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Link created' }),
+    ).toBeInTheDocument();
   });
 
   it('shows the network alert when nothing answers within 15 seconds', async () => {
@@ -689,6 +814,41 @@ describe('create success', () => {
     expect(screen.getByRole('radio', { name: '7 days' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Limit to 12 views' })).toBeChecked();
     expect(screen.queryByRole('textbox', { name: 'Share link' })).not.toBeInTheDocument();
+  });
+
+  it('clears the links before the back-forward cache can freeze the page', async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'bash');
+    await user.click(screen.getByRole('radio', { name: '7 days' }));
+    await createWith(user);
+    let linksWhenFrozen: HTMLElement[] = [];
+
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true }));
+      linksWhenFrozen = screen.queryAllByRole('textbox', { name: /link$/ });
+    });
+
+    expect(linksWhenFrozen).toEqual([]);
+    expect(document.body).not.toHaveTextContent(DELETE_TOKEN);
+    expect(document.querySelector(`input[value*="${DELETE_TOKEN}"]`)).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'New paste' })).toBeInTheDocument();
+    expect(contentField()).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: 'Language' })).toHaveValue('bash');
+    expect(screen.getByRole('radio', { name: '7 days' })).toBeChecked();
+  });
+
+  it('clears the links when a page comes back from the back-forward cache', async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await createWith(user);
+
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+
+    expect(screen.queryByRole('textbox', { name: 'Delete link' })).not.toBeInTheDocument();
+    expect(contentField()).toHaveValue('');
   });
 });
 

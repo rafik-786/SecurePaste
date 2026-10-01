@@ -18,7 +18,7 @@ const CONTENT_SECURITY_POLICY = [
 const CSP_ANCHOR = '<link rel="icon"';
 
 const ENTRY_CHUNK_NAME = 'index';
-const ROUTE_MODULE = /[\\/]src[\\/]routes[\\/](?!shared[\\/]|paste[\\/])/;
+const ROUTE_MODULE = /[\\/]src[\\/]routes[\\/](?!shared[\\/])/;
 const HIGHLIGHTER_MODULE = /[\\/](highlight\.js[\\/]|src[\\/]lib[\\/]highlight\.ts)/;
 
 // Code shared by several lazy routes would otherwise become extra common chunks, each one more

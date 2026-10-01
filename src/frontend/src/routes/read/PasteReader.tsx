@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { claimView, peekPaste } from '../../api/client';
 import { requestFailure } from '../../api/request';
 import type { ClaimResponse, PeekResponse } from '../../api/types';
 import { PageHeading } from '../../components/PageHeading';
-import { useRequestSignal } from '../../hooks/useRequestSignal';
 import { decryptPaste, parseKey } from '../../lib/crypto';
 import { preloadHighlighter } from '../../lib/highlight';
-import { PasteSkeleton } from '../paste/PasteSkeleton';
+import { PasteSkeleton } from '../shared/PasteSkeleton';
+import { usePeekAttempt, type AttemptRun } from '../shared/usePeekAttempt';
 import { Interstitial } from './Interstitial';
 import { OpenedView } from './OpenedView';
 import {
@@ -30,98 +30,79 @@ export interface PasteReaderProps {
   readonly fragmentKey: string;
 }
 
+async function claimAndDecrypt(
+  id: string,
+  key: CryptoKey,
+  signal: AbortSignal,
+  onDecrypting: () => void,
+): Promise<ReadState | undefined> {
+  let claim: ClaimResponse;
+  try {
+    claim = await claimView(id, signal);
+  } catch (error) {
+    const failure = requestFailure(error);
+    return failure && claimFailureState(failure);
+  }
+  onDecrypting();
+  try {
+    return { kind: 'open', paste: openedPaste(await decryptPaste(claim.ciphertext, key), claim) };
+  } catch {
+    return { kind: 'corrupted', remainingViews: claim.remainingViews };
+  }
+}
+
+async function checkLink(
+  id: string,
+  fragmentKey: string,
+  attempt: AttemptRun<ReadState>,
+): Promise<void> {
+  let key: CryptoKey;
+  try {
+    key = await parseKey(fragmentKey);
+  } catch {
+    attempt.settle({ kind: 'incomplete' });
+    return;
+  }
+  if (attempt.isStale()) {
+    return;
+  }
+
+  preloadHighlighter();
+  let peek: PeekResponse;
+  try {
+    peek = await peekPaste(id, attempt.nextSignal());
+  } catch (error) {
+    const failure = requestFailure(error);
+    if (failure) {
+      attempt.settle(peekFailureState(failure));
+    }
+    return;
+  }
+  if (attempt.isStale()) {
+    return;
+  }
+
+  if (peek.remainingViews !== null) {
+    attempt.settle({
+      kind: 'sealed',
+      peek: sealedPeek(peek, peek.remainingViews),
+      key,
+      step: 'idle',
+    });
+    return;
+  }
+  attempt.settle(OPENING);
+  const next = await claimAndDecrypt(id, key, attempt.nextSignal(), () => undefined);
+  if (next) {
+    attempt.settle(next);
+  }
+}
+
 export function PasteReader({ id, fragmentKey }: PasteReaderProps) {
-  const nextSignal = useRequestSignal();
-  const [attempt, setAttempt] = useState(0);
-  const [state, setState] = useState<ReadState>(CHECKING);
-  const autoClaimedAttempt = useRef<number | null>(null);
   const claiming = useRef(false);
-
-  const claimAndDecrypt = useCallback(
-    async (key: CryptoKey, onDecrypting: () => void): Promise<ReadState | undefined> => {
-      let claim: ClaimResponse;
-      try {
-        claim = await claimView(id, nextSignal());
-      } catch (error) {
-        const failure = requestFailure(error);
-        return failure && claimFailureState(failure);
-      }
-      onDecrypting();
-      try {
-        return {
-          kind: 'open',
-          paste: openedPaste(await decryptPaste(claim.ciphertext, key), claim),
-        };
-      } catch {
-        return { kind: 'corrupted', remainingViews: claim.remainingViews };
-      }
-    },
-    [id, nextSignal],
+  const { state, setState, nextSignal, retry } = usePeekAttempt<ReadState>(CHECKING, (attempt) =>
+    checkLink(id, fragmentKey, attempt),
   );
-
-  useEffect(() => {
-    const stale = new AbortController();
-    const isStale = () => stale.signal.aborted;
-
-    const check = async () => {
-      let key: CryptoKey;
-      try {
-        key = await parseKey(fragmentKey);
-      } catch {
-        if (!isStale()) {
-          setState({ kind: 'incomplete' });
-        }
-        return;
-      }
-      if (isStale()) {
-        return;
-      }
-
-      preloadHighlighter();
-      let peek: PeekResponse;
-      try {
-        peek = await peekPaste(id, nextSignal());
-      } catch (error) {
-        const failure = requestFailure(error);
-        if (!isStale() && failure) {
-          setState(peekFailureState(failure));
-        }
-        return;
-      }
-      if (isStale()) {
-        return;
-      }
-
-      if (peek.remainingViews !== null) {
-        setState({
-          kind: 'sealed',
-          peek: sealedPeek(peek, peek.remainingViews),
-          key,
-          step: 'idle',
-        });
-        return;
-      }
-      if (autoClaimedAttempt.current === attempt) {
-        return;
-      }
-      autoClaimedAttempt.current = attempt;
-      setState(OPENING);
-      const next = await claimAndDecrypt(key, () => undefined);
-      if (!isStale() && next) {
-        setState(next);
-      }
-    };
-
-    void check();
-    return () => {
-      stale.abort();
-    };
-  }, [attempt, fragmentKey, id, nextSignal, claimAndDecrypt]);
-
-  const retry = useCallback(() => {
-    setState(CHECKING);
-    setAttempt((previous) => previous + 1);
-  }, []);
 
   switch (state.kind) {
     case 'checking':
@@ -142,7 +123,7 @@ export function PasteReader({ id, fragmentKey }: PasteReaderProps) {
         }
         claiming.current = true;
         setState({ ...state, step: 'revealing' });
-        void claimAndDecrypt(state.key, () => {
+        void claimAndDecrypt(id, state.key, nextSignal(), () => {
           setState({ ...state, step: 'decrypting' });
         }).then((next) => {
           claiming.current = false;

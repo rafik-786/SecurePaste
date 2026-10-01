@@ -5,6 +5,7 @@ import {
   encodeBase64,
   encodeBase64Url,
   InvalidBase64Error,
+  isBase64UrlOfLength,
 } from './base64';
 
 const RANDOM_VALUES_LIMIT = 65_536;
@@ -160,5 +161,26 @@ describe('decodeBase64Url', () => {
     { input: 'Zm9', reason: 'non-zero bits after the last byte (two bytes)' },
   ])('rejects $reason', ({ input }) => {
     expect(() => decodeBase64Url(input)).toThrow(InvalidBase64Error);
+  });
+});
+
+describe('isBase64UrlOfLength', () => {
+  const thirtyTwoBytes = encodeBase64Url(randomBytes(32));
+
+  it('accepts canonical base64url of exactly the given byte length', () => {
+    expect(isBase64UrlOfLength(thirtyTwoBytes, 32)).toBe(true);
+  });
+
+  it.each([
+    { input: encodeBase64Url(randomBytes(31)), reason: '31 bytes' },
+    { input: encodeBase64Url(randomBytes(33)), reason: '33 bytes' },
+    { input: `${thirtyTwoBytes}=`, reason: 'padding' },
+    { input: `${thirtyTwoBytes.slice(0, -1)}+`, reason: 'a standard base64 character' },
+    { input: 'a b#c', reason: 'characters outside the alphabet' },
+    { input: '', reason: 'an empty string' },
+    { input: 42, reason: 'a number' },
+    { input: undefined, reason: 'undefined' },
+  ])('rejects $reason', ({ input }) => {
+    expect(isBase64UrlOfLength(input, 32)).toBe(false);
   });
 });

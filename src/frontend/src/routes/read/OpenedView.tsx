@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Alert } from '../../components/Alert';
 import { ExpiryTime } from '../../components/ExpiryTime';
 import { FlameIcon } from '../../components/icons/icons';
+import { Panel } from '../../components/Panel';
 import { SealStrip } from '../../components/SealStrip';
 import { useFocusOnChange } from '../../hooks/useFocusOnChange';
 import { useLeaveGuard } from '../../hooks/leaveGuard';
@@ -10,7 +11,6 @@ import { viewsLeftLabel } from '../../lib/format';
 import { CodeViewer } from './CodeViewer/CodeViewer';
 import type { OpenedPaste } from './readState';
 import { useHasPassed } from './useHasPassed';
-import styles from './ReadRoute.module.css';
 
 const DESTROYED_FOCUS_KEY = 'destroyed';
 const REVEALED_FOCUS_KEY = 'revealed';
@@ -25,7 +25,6 @@ function OpenedStrip({ paste }: { readonly paste: OpenedPaste }) {
   return (
     <SealStrip
       state="opened"
-      className={styles.strip}
       items={[
         viewsLeftLabel(paste.remainingViews),
         <ExpiryTime key="expiry" expiresAt={paste.expiresAt} now={now} />,
@@ -58,29 +57,25 @@ export function OpenedView({ pasteId, paste }: OpenedViewProps) {
           The server no longer has it. What is on this screen is the only copy left.
         </Alert>
       )}
-      <div className={styles.pastePanel}>
-        {destroyed ? (
-          <SealStrip
-            state="destroyed"
-            className={styles.strip}
-            items={[viewsLeftLabel(paste.remainingViews)]}
-          />
-        ) : expired ? (
-          <SealStrip
-            state="expired"
-            className={styles.strip}
-            items={['Only the copy on this screen remains']}
-          />
-        ) : (
-          <OpenedStrip paste={paste} />
-        )}
+      <Panel
+        fullBleed
+        strip={
+          destroyed ? (
+            <SealStrip state="destroyed" items={[viewsLeftLabel(paste.remainingViews)]} />
+          ) : expired ? (
+            <SealStrip state="expired" items={['Only the copy on this screen remains']} />
+          ) : (
+            <OpenedStrip paste={paste} />
+          )
+        }
+      >
         <CodeViewer
           pasteId={pasteId}
           content={paste.content}
           language={paste.language}
           regionRef={region}
         />
-      </div>
+      </Panel>
     </>
   );
 }
