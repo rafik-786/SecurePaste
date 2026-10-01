@@ -234,6 +234,12 @@
   }
 }
 
+@media (max-width: 19.9375em) {
+  :root {
+    --gutter: 0.5rem;
+  }
+}
+
 @media (min-width: 40.0625em) and (max-width: 63.9375em) {
   :root {
     --gutter: 1.5rem;

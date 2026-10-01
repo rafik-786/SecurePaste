@@ -56,7 +56,7 @@
   font-size: var(--text-md);
   line-height: var(--leading-snug);
   text-align: center;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   transition:
     background-color var(--duration-fast) var(--ease-standard),
     color var(--duration-fast) var(--ease-standard);
@@ -112,7 +112,7 @@
 @media (max-width: 40em) {
   .segments {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     inline-size: 100%;
   }
 
@@ -148,6 +148,38 @@
 
   .segment:last-child .face {
     border-end-end-radius: var(--inner-radius);
+  }
+}
+
+/* 20em is 320px at the default text size, the narrowest width the layout supports. The em grows
+   with the text, so at 150% text phones up to 478px fall below it, and at 200% up to 638px. */
+@media (max-width: 19.9375em) {
+  .segments {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .segment:nth-child(even) {
+    border-inline-start: 0;
+  }
+
+  .segment + .segment {
+    border-block-start: var(--border-hairline) solid var(--color-border-strong);
+  }
+
+  .segment:first-child .face {
+    border-start-end-radius: var(--inner-radius);
+  }
+
+  .segment:nth-child(2) .face {
+    border-start-end-radius: 0;
+  }
+
+  .segment:nth-last-child(2):nth-child(odd) .face {
+    border-end-start-radius: 0;
+  }
+
+  .segment:last-child .face {
+    border-end-start-radius: var(--inner-radius);
   }
 }
 

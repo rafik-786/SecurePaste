@@ -99,6 +99,7 @@
 
 .iconSlot {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   inline-size: 16px;
@@ -114,6 +115,16 @@
   .sm,
   .md {
     min-block-size: var(--control-height-touch);
+  }
+}
+
+/* Below 20em, which on a phone means text at 150% or more, the padding shrinks so whole words fit
+   on a label line: at 200% on 320px the full padding leaves a line narrower than "destroy". */
+@media (max-width: 19.9375em) {
+  .button,
+  .sm,
+  .lg {
+    padding-inline: var(--space-2);
   }
 }
 

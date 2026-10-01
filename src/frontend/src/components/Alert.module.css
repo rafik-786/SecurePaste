@@ -53,11 +53,13 @@
   font-weight: var(--weight-semibold);
   line-height: var(--leading-normal);
   color: var(--alert-accent);
+  overflow-wrap: break-word;
 }
 
 .body {
   font-size: var(--text-md);
   line-height: var(--leading-normal);
+  overflow-wrap: break-word;
 }
 
 .title + .body {
@@ -70,6 +72,13 @@
 
 .actions {
   margin-block-start: var(--space-3);
+}
+
+@media (max-width: 19.9375em) {
+  .alert {
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
 }
 
 @media (forced-colors: active) {

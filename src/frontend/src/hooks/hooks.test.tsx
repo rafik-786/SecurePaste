@@ -2,6 +2,7 @@ import { act, render, renderHook, screen } from '@testing-library/react';
 import { StrictMode, useRef, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { encryptedByteSize } from '../lib/crypto';
+import { expectFocus } from '../test/focus';
 import { documentTitleFor, useDocumentTitle } from './useDocumentTitle';
 import { measureEncryptedSize, useEncryptedSize } from './useEncryptedSize';
 import { useFocusOnChange } from './useFocusOnChange';
@@ -30,10 +31,15 @@ describe('useDocumentTitle', () => {
 });
 
 describe('useFocusOnChange', () => {
-  function Harness({ initialKey }: { readonly initialKey: string | undefined }) {
+  interface HarnessProps {
+    readonly initialKey: string | undefined;
+    readonly afterLayout?: boolean;
+  }
+
+  function Harness({ initialKey, afterLayout = false }: HarnessProps) {
     const ref = useRef<HTMLButtonElement>(null);
     const [key, setKey] = useState(initialKey);
-    useFocusOnChange(ref, key);
+    useFocusOnChange(ref, key, { afterLayout });
     return (
       <>
         <button type="button" ref={ref}>
@@ -87,7 +93,50 @@ describe('useFocusOnChange', () => {
     });
     expect(screen.getByRole('button', { name: 'Target' })).toHaveFocus();
   });
+
+  it('after layout: focuses once the frames that grow the page have passed', async () => {
+    render(<Harness initialKey="first" afterLayout />);
+    const target = screen.getByRole('button', { name: 'Target' });
+
+    expect(target).not.toHaveFocus();
+    await nextFrame();
+    expect(target).not.toHaveFocus();
+    await nextFrame();
+    expect(target).toHaveFocus();
+  });
+
+  it('after layout: still focuses when StrictMode runs the effect twice', async () => {
+    render(<Harness initialKey="first" afterLayout />, { wrapper: StrictMode });
+
+    await expectFocus(screen.getByRole('button', { name: 'Target' }));
+  });
+
+  it('after layout: drops the pending focus when the screen unmounts first', async () => {
+    const outside = document.createElement('button');
+    document.body.append(outside);
+    const target = { current: outside };
+    function Screen() {
+      useFocusOnChange(target, 'first', { afterLayout: true });
+      return null;
+    }
+
+    render(<Screen />).unmount();
+    await nextFrame();
+    await nextFrame();
+    await nextFrame();
+
+    expect(outside).not.toHaveFocus();
+    outside.remove();
+  });
 });
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
+}
 
 describe('useNow', () => {
   it('re-renders every 30 seconds by default', () => {

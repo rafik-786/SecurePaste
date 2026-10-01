@@ -17,14 +17,13 @@ const SEALS: Readonly<Record<SealState, { readonly icon: IconComponent; readonly
 export interface SealStripProps {
   readonly state: SealState;
   readonly items: readonly ReactNode[];
-  readonly className?: string | undefined;
 }
 
-export function SealStrip({ state, items, className }: SealStripProps) {
+export function SealStrip({ state, items }: SealStripProps) {
   const { icon: Icon, word } = SEALS[state];
 
   return (
-    <div className={cx(styles.strip, styles[state], className)}>
+    <div className={cx(styles.strip, styles[state])}>
       <span className={styles.items}>
         <span className={styles.item}>
           <Icon />

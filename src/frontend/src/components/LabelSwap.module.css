@@ -2,12 +2,15 @@
   display: inline-grid;
   align-items: center;
   justify-items: start;
+  min-inline-size: 0;
 }
 
+/* anywhere, not break-word: it also lowers the min-content width, so a single long word such as
+   "Decrypting..." lets the button shrink to the screen instead of pushing past it. */
 .label,
 .hidden {
   grid-area: 1 / 1;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   transition: opacity var(--duration-base) var(--ease-standard);
 }
 

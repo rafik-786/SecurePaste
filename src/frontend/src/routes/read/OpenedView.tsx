@@ -38,7 +38,7 @@ export function OpenedView({ pasteId, paste }: OpenedViewProps) {
   const destroyed = paste.remainingViews === 0;
   const expired = useHasPassed(paste.expiresAt) && !destroyed;
   useLeaveGuard(destroyed || expired);
-  useFocusOnChange(region, destroyed ? undefined : REVEALED_FOCUS_KEY);
+  useFocusOnChange(region, destroyed ? undefined : REVEALED_FOCUS_KEY, { afterLayout: true });
 
   return (
     <>

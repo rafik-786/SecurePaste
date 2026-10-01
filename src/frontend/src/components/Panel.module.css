@@ -23,3 +23,9 @@
     border-radius: 0;
   }
 }
+
+@media (max-width: 19.9375em) {
+  .body {
+    padding: var(--space-2);
+  }
+}
