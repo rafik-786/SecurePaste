@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .lock { fill: none; stroke: #1f2937; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .hole { fill: #1f2937; }
+    @media (prefers-color-scheme: dark) {
+      .lock { stroke: #f3f4f6; }
+      .hole { fill: #f3f4f6; }
+    }
+  </style>
+  <path class="lock" d="M10 14V10a6 6 0 0 1 12 0v4" />
+  <rect class="lock" x="6" y="14" width="20" height="14" rx="3" />
+  <circle class="hole" cx="16" cy="21" r="2" />
+</svg>
