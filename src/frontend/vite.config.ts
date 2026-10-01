@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), contentSecurityPolicy()],
     build: {
       cssCodeSplit: false,
+      manifest: true,
       rolldownOptions: {
         output: {
           codeSplitting: {

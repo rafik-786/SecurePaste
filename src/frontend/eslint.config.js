@@ -9,7 +9,7 @@ import tseslint from 'typescript-eslint';
 export default defineConfig(
   globalIgnores(['dist', 'coverage', 'playwright-report', 'test-results', 'blob-report']),
   {
-    files: ['**/*.js'],
+    files: ['**/*.{js,mjs}'],
     extends: [js.configs.recommended],
     languageOptions: { globals: globals.node },
   },
