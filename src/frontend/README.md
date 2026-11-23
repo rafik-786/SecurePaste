@@ -52,6 +52,13 @@ dev server from a phone over the local network needs HTTPS.
 
 ## Running against the real backend
 
+On Windows, `dev.ps1` at the repo root does all of the steps below in one go.
+It starts (or creates) the PostgreSQL container, applies the migrations, then
+opens the API and the dev server in their own Windows Terminal tabs (separate
+windows when Windows Terminal is missing). The flags at the top of the file
+choose what runs: `$RunBackend`, `$RunFrontend` and `$ApplyMigrations`. Ctrl+C
+in a tab stops that process; the database keeps running. The manual steps are:
+
 Start PostgreSQL 16, then, from `src/backend` (where the Entity Framework
 tool manifest lives), restore the tools and apply the migrations once:
 
