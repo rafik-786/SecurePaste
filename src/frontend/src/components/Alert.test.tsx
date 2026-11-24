@@ -50,11 +50,11 @@ describe('Alert', () => {
   it('has no role without a title, so a plain callout stays plain', () => {
     render(
       <Alert variant="info" icon={FlameIcon}>
-        Revealing uses 1 of 5 remaining views.
+        Revealing uses 1 of 5 views.
       </Alert>,
     );
 
     expect(screen.queryByRole('group')).not.toBeInTheDocument();
-    expect(screen.getByText('Revealing uses 1 of 5 remaining views.')).toBeInTheDocument();
+    expect(screen.getByText('Revealing uses 1 of 5 views.')).toBeInTheDocument();
   });
 });

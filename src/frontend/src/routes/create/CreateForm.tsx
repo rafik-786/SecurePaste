@@ -1,10 +1,10 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ActionRow } from '../../components/ActionRow';
 import { Button } from '../../components/Button';
 import { Field } from '../../components/Field';
 import { LockIcon } from '../../components/icons/icons';
-import { Kbd } from '../../components/Kbd';
 import { NumberInput } from '../../components/NumberInput';
+import { Panel } from '../../components/Panel';
 import { RadioList, type RadioOption } from '../../components/RadioList';
 import { SegmentedControl } from '../../components/SegmentedControl';
 import { Select } from '../../components/Select';
@@ -14,9 +14,14 @@ import { useEncryptedSize } from '../../hooks/useEncryptedSize';
 import { formatShortcut } from '../../lib/format';
 import { isKnownLanguage, LANGUAGES } from '../../lib/languages';
 import { EXPIRY_OPTIONS, MAX_VIEWS, MIN_VIEWS } from '../../lib/limits';
-import { isApplePlatform, isSubmitShortcut, SUBMIT_KEY_SHORTCUTS } from '../../lib/platform';
+import {
+  hasFinePointer,
+  isApplePlatform,
+  isSubmitShortcut,
+  SUBMIT_KEY_SHORTCUTS,
+} from '../../lib/platform';
 import { CreateFailureAlert } from './CreateFailureAlert';
-import type { CreateOptions, ViewsChoice } from './formOptions';
+import { viewCountUnit, type CreateOptions, type ViewsChoice } from './formOptions';
 import type { CreatedPaste } from './links';
 import { ENCRYPTING_LABEL, UPLOADING_LABEL, useCreateSubmission } from './useCreateSubmission';
 import styles from './CreateForm.module.css';
@@ -53,6 +58,9 @@ export function CreateForm({
     onCreated,
   });
   const bytes = useEncryptedSize(form.content, options.language);
+  const [shortcutHint] = useState(() =>
+    hasFinePointer() ? formatShortcut('Enter', isApplePlatform()) : undefined,
+  );
 
   useEffect(() => {
     if (focusContentOnMount) {
@@ -61,7 +69,7 @@ export function CreateForm({
   }, [focusContentOnMount, contentRef]);
 
   const viewsOptions: readonly RadioOption<ViewsChoice>[] = [
-    { value: 'burn', label: 'Burn after reading', hint: 'Destroyed after the first view.' },
+    { value: 'burn', label: 'Burn after reading' },
     {
       value: 'limit',
       label: (
@@ -87,128 +95,139 @@ export function CreateForm({
             }}
             onBlur={form.blurViewCount}
           />{' '}
-          views
+          {viewCountUnit(options.viewCount)}
         </>
       ),
-      hint: 'Destroyed after the last view.',
     },
-    {
-      value: 'unlimited',
-      label: 'Unlimited',
-      hint: 'Anyone with the link can open it until it expires.',
-    },
+    { value: 'unlimited', label: 'Unlimited' },
   ];
 
   return (
     <>
-      <p className={styles.lead}>
-        Encrypted in your browser before upload. The server stores only ciphertext and never sees
-        the key.
-      </p>
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Ctrl+Enter is delegated from the controls inside; the form itself never takes focus. */}
-      <form
-        className={styles.form}
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          form.submit();
-        }}
-        onKeyDown={(event) => {
-          if (isSubmitShortcut(event)) {
+      <p className={styles.lead}>Encrypted in your browser. The server never sees the key.</p>
+      {/* One card holds the whole form in the stacked layout and two cards split it in app mode.
+          Each wrapper that is not a card in the current layout is display: contents. The alert
+          sits in the editor card because only the text area there can give up height. */}
+      <Panel className={styles.card} bodyClassName={styles.cardBody}>
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Ctrl+Enter is delegated from the controls inside; the form itself never takes focus. */}
+        <form
+          className={styles.form}
+          noValidate
+          onSubmit={(event) => {
             event.preventDefault();
             form.submit();
-          }
-        }}
-      >
-        <Field label="Content" error={form.contentProblem} describedBy={meterId}>
-          {(control) => (
-            <>
-              <TextArea
-                {...control}
-                ref={contentRef}
-                value={form.content}
-                placeholder="Paste text or code here"
-                readOnly={form.busy}
-                onChange={(event) => {
-                  form.changeContent(event.target.value);
-                }}
-                onBlur={form.blurContent}
-              />
-              <SizeMeter id={meterId} bytes={bytes} />
-            </>
-          )}
-        </Field>
-
-        <div className={styles.options}>
-          <Field
-            label="Language"
-            hint="Used for syntax highlighting. Stored inside the encrypted paste."
-          >
-            {(control) => (
-              <Select
-                {...control}
-                value={options.language}
-                onChange={(event) => {
-                  const { value } = event.target;
-                  if (isKnownLanguage(value)) {
-                    form.changeOptions({ ...options, language: value });
-                  }
-                }}
-              >
-                {LANGUAGES.map(({ id, label }) => (
-                  <option key={id} value={id}>
-                    {label}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-          <SegmentedControl
-            legend="Expires after"
-            name="expiry"
-            options={EXPIRY_SEGMENTS}
-            value={options.expiry}
-            onChange={(expiry) => {
-              form.changeOptions({ ...options, expiry });
-            }}
-            hint="Removed from the server at this time, even if nobody opened it."
-            busy={form.busy}
-          />
-        </div>
-
-        <RadioList
-          legend="Views"
-          name="views"
-          options={viewsOptions}
-          value={options.views}
-          onChange={(views) => {
-            form.changeOptions({ ...options, views });
           }}
-          error={form.viewCountProblem}
-          errorId={viewCountErrorId}
-          busy={form.busy}
-        />
+          onKeyDown={(event) => {
+            if (isSubmitShortcut(event)) {
+              event.preventDefault();
+              form.submit();
+            }
+          }}
+        >
+          <Panel className={styles.editor} bodyClassName={styles.editorBody}>
+            <Field
+              label="Content"
+              error={form.contentProblem}
+              describedBy={meterId}
+              className={styles.contentField}
+            >
+              {(control) => (
+                <>
+                  <TextArea
+                    {...control}
+                    ref={contentRef}
+                    className={styles.content}
+                    value={form.content}
+                    placeholder="Paste text or code here"
+                    readOnly={form.busy}
+                    onChange={(event) => {
+                      form.changeContent(event.target.value);
+                    }}
+                    onBlur={form.blurContent}
+                  />
+                  <SizeMeter id={meterId} bytes={bytes} />
+                </>
+              )}
+            </Field>
+            {form.failure && (
+              <CreateFailureAlert
+                failure={form.failure}
+                countdown={form.countdown}
+                className={styles.failure}
+              />
+            )}
+          </Panel>
 
-        {form.failure && <CreateFailureAlert failure={form.failure} countdown={form.countdown} />}
+          <Panel className={styles.settings} bodyClassName={styles.settingsBody}>
+            <div className={styles.choices}>
+              <div className={styles.options}>
+                <Field label="Language">
+                  {(control) => (
+                    <Select
+                      {...control}
+                      value={options.language}
+                      onChange={(event) => {
+                        const { value } = event.target;
+                        if (isKnownLanguage(value)) {
+                          form.changeOptions({ ...options, language: value });
+                        }
+                      }}
+                    >
+                      {LANGUAGES.map(({ id, label }) => (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                <SegmentedControl
+                  legend="Expires after"
+                  name="expiry"
+                  options={EXPIRY_SEGMENTS}
+                  value={options.expiry}
+                  onChange={(expiry) => {
+                    form.changeOptions({ ...options, expiry });
+                  }}
+                  busy={form.busy}
+                />
+              </div>
 
-        <ActionRow>
-          <Button
-            ref={submitRef}
-            type="submit"
-            variant="primary"
-            size="lg"
-            icon={LockIcon}
-            busyLabel={form.busyLabel}
-            reserveLabels={BUSY_LABELS}
-            disabled={form.waiting}
-            aria-keyshortcuts={SUBMIT_KEY_SHORTCUTS}
-            onPointerDown={form.pressSubmit}
-          >
-            {SUBMIT_LABEL}
-          </Button>
-          <Kbd className={styles.shortcut}>{formatShortcut('Enter', isApplePlatform())}</Kbd>
-        </ActionRow>
-      </form>
+              <RadioList
+                legend="Views"
+                name="views"
+                options={viewsOptions}
+                value={options.views}
+                onChange={(views) => {
+                  form.changeOptions({ ...options, views });
+                }}
+                error={form.viewCountProblem}
+                errorId={viewCountErrorId}
+                busy={form.busy}
+              />
+            </div>
+
+            <ActionRow className={styles.submitRow}>
+              <Button
+                ref={submitRef}
+                type="submit"
+                variant="primary"
+                size="lg"
+                icon={LockIcon}
+                className={styles.submit}
+                busyLabel={form.busyLabel}
+                reserveLabels={BUSY_LABELS}
+                disabled={form.waiting}
+                title={shortcutHint}
+                aria-keyshortcuts={SUBMIT_KEY_SHORTCUTS}
+                onPointerDown={form.pressSubmit}
+              >
+                {SUBMIT_LABEL}
+              </Button>
+            </ActionRow>
+          </Panel>
+        </form>
+      </Panel>
     </>
   );
 }

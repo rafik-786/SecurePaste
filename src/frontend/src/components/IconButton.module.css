@@ -16,7 +16,7 @@
 
 @media (hover: hover) {
   .iconButton:hover {
-    background-color: var(--color-surface-hover);
+    background-color: var(--glass-bg-hover);
   }
 }
 

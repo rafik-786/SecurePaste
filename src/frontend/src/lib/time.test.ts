@@ -67,9 +67,12 @@ describe('isPast', () => {
 describe('formatAbsolute', () => {
   const instant = new Date('2026-08-04T18:32:00Z');
 
-  it('formats a medium date and a short time in the given zone', () => {
-    expect(plainSpaces(formatAbsolute(instant, 'UTC'))).toBe('Aug 4, 2026, 6:32 PM');
-    expect(plainSpaces(formatAbsolute(instant, 'Asia/Dhaka'))).toBe('Aug 5, 2026, 12:32 AM');
+  it('writes the day before the month and a lowercase am or pm, in the given zone', () => {
+    expect(plainSpaces(formatAbsolute(instant, 'UTC'))).toBe('4 Aug 2026, 6:32 pm');
+    expect(plainSpaces(formatAbsolute(instant, 'Asia/Kolkata'))).toBe('5 Aug 2026, 12:02 am');
+    expect(plainSpaces(formatAbsolute(new Date('2026-11-24T20:46:00Z'), 'Asia/Kolkata'))).toBe(
+      '25 Nov 2026, 2:16 am',
+    );
   });
 
   it('uses the local time zone by default', () => {

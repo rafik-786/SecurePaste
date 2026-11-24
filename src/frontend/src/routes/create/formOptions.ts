@@ -8,7 +8,7 @@ import {
   MIN_VIEWS,
   type ExpiryId,
 } from '../../lib/limits';
-import { parseWholeNumberInRange } from '../../lib/numbers';
+import { parseWholeNumber, parseWholeNumberInRange } from '../../lib/numbers';
 
 export type ViewsChoice = 'burn' | 'limit' | 'unlimited';
 
@@ -26,7 +26,7 @@ export const DEFAULT_OPTIONS: CreateOptions = {
   viewCount: '5',
 };
 
-export const EMPTY_CONTENT_ERROR = 'Paste some text first.';
+export const EMPTY_CONTENT_ERROR = 'Add some text first.';
 export const VIEW_COUNT_ERROR = `Enter a whole number from ${MIN_VIEWS} to ${MAX_VIEWS}.`;
 
 export function overLimitError(encryptedBytes: number): string {
@@ -49,6 +49,10 @@ export function maxViewsFor(options: CreateOptions): number | null | undefined {
     case 'limit':
       return parseWholeNumberInRange(options.viewCount, MIN_VIEWS, MAX_VIEWS);
   }
+}
+
+export function viewCountUnit(viewCount: string): 'view' | 'views' {
+  return parseWholeNumber(viewCount) === 1 ? 'view' : 'views';
 }
 
 export function viewCountError(options: CreateOptions): string | undefined {

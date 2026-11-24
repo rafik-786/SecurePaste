@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { applyTheme, expect, test, THEMES } from './fixtures';
 import {
   BASH_CONTENT,
   CLAIM_PATH,
@@ -64,9 +64,9 @@ test('burn after reading: nothing is claimed until Reveal, then the content show
   const reveal = page.getByRole('button', { name: 'Reveal and destroy' });
   await expect(reveal).toBeVisible();
   await expect(page.getByText('1 view left')).toBeVisible();
-  await expect(page.getByText(`${paste.sizeBytes} bytes encrypted`)).toBeVisible();
+  await expect(page.getByText(/bytes encrypted/)).toHaveCount(0);
   await expect(
-    page.getByText('This is the last view. After you reveal it, the paste is destroyed.'),
+    page.getByText('This is the last view. Revealing it destroys the paste.'),
   ).toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(api.count('POST', CLAIM_PATH)).toBe(0);
@@ -113,7 +113,7 @@ test('many views: the cost is stated, Reveal opens it and focuses the code', asy
   });
 
   await page.goto(`/p/${PASTE_ID}#${paste.key}`);
-  await expect(page.getByText('Revealing uses 1 of 5 remaining views.')).toBeVisible();
+  await expect(page.getByText('Revealing uses 1 of 5 views.')).toBeVisible();
   await page.getByRole('button', { name: 'Reveal paste' }).click();
 
   await expect(page.getByRole('region', { name: 'Paste content, Bash, 3 lines' })).toBeFocused();
@@ -155,9 +155,13 @@ test('tampered ciphertext shows the corrupted page and nothing partial', async (
   await page.getByRole('button', { name: 'Reveal paste' }).click();
 
   await expect(
-    page.getByRole('heading', { level: 1, name: 'Corrupted data or wrong key' }),
+    page.getByRole('heading', { level: 1, name: 'This paste could not be decrypted' }),
   ).toBeFocused();
-  await expect(page.getByText('This view was counted. 1 view remains.')).toBeVisible();
+  await expect(
+    page.getByText(
+      "The key doesn't match, or the data was changed. A view was used. 1 view remains.",
+    ),
+  ).toBeVisible();
   await expect(page.getByRole('region')).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText('hunter2');
 });
@@ -348,25 +352,43 @@ test('on a 375px phone a long line scrolls inside the full-bleed viewer, never t
   expect(gutterLeft).toBe('sticky');
 });
 
-test('dark theme: highlighting uses the dark syntax tokens with no console errors', async ({
-  page,
-}) => {
-  await page.emulateMedia({ colorScheme: 'dark' });
-  const paste = await sealPaste('// greet\nconst answer = 42;\n', 'javascript');
-  await mockApi(page, {
-    [`GET ${PASTE_PATH}`]: [peek(null, paste.sizeBytes)],
-    [`POST ${CLAIM_PATH}`]: [claim(paste.ciphertext, null)],
+const SYNTAX_COLORS = {
+  dark: {
+    keyword: 'rgb(196, 165, 255)',
+    comment: 'rgb(139, 152, 173)',
+    number: 'rgb(249, 168, 212)',
+    background: 'rgba(14, 22, 38, 0.94)',
+  },
+  light: {
+    keyword: 'rgb(124, 58, 237)',
+    comment: 'rgb(85, 98, 116)',
+    number: 'rgb(190, 24, 93)',
+    background: 'rgba(243, 246, 250, 0.94)',
+  },
+} as const;
+
+for (const theme of THEMES) {
+  test(`${theme} theme: highlighting uses the ${theme} syntax tokens with no console errors`, async ({
+    page,
+  }) => {
+    const colors = SYNTAX_COLORS[theme];
+    await applyTheme(page, theme);
+    const paste = await sealPaste('// greet\nconst answer = 42;\n', 'javascript');
+    await mockApi(page, {
+      [`GET ${PASTE_PATH}`]: [peek(null, paste.sizeBytes)],
+      [`POST ${CLAIM_PATH}`]: [claim(paste.ciphertext, null)],
+    });
+
+    await page.goto(`/p/${PASTE_ID}#${paste.key}`);
+    const code = page.getByRole('region', { name: 'Paste content, JavaScript, 2 lines' });
+
+    await expect(code.locator('.hljs-keyword')).toHaveText('const');
+    await expect(code.locator('.hljs-keyword')).toHaveCSS('color', colors.keyword);
+    await expect(code.locator('.hljs-comment')).toHaveCSS('color', colors.comment);
+    await expect(code.locator('.hljs-number')).toHaveCSS('color', colors.number);
+    await expect(code).toHaveCSS('background-color', colors.background);
   });
-
-  await page.goto(`/p/${PASTE_ID}#${paste.key}`);
-  const code = page.getByRole('region', { name: 'Paste content, JavaScript, 2 lines' });
-
-  await expect(code.locator('.hljs-keyword')).toHaveText('const');
-  await expect(code.locator('.hljs-keyword')).toHaveCSS('color', 'rgb(229, 155, 216)');
-  await expect(code.locator('.hljs-comment')).toHaveCSS('color', 'rgb(156, 151, 140)');
-  await expect(code.locator('.hljs-number')).toHaveCSS('color', 'rgb(242, 169, 104)');
-  await expect(code).toHaveCSS('background-color', 'rgb(15, 15, 13)');
-});
+}
 
 for (const viewport of [
   { width: 1280, height: 800 },
@@ -452,9 +474,9 @@ for (const width of [320, 375]) {
       const strip = {
         opened: '4 views left',
         destroyed: 'That was the last view',
-        expired: 'Only the copy on this screen remains',
+        expired: 'Expired',
       }[state];
-      await expect(page.getByText(strip)).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(strip, { exact: true })).toBeVisible({ timeout: 10_000 });
 
       const measure = () =>
         page.evaluate(() => {
@@ -545,19 +567,17 @@ for (const viewport of [
       });
     });
 
-    expect(items.map(({ text }) => text)).toEqual([
-      'Sealed',
-      '1 view left',
-      'Expires in 23 hours',
-      `${paste.sizeBytes} bytes encrypted`,
-    ]);
+    expect(items.map(({ text }) => text)).toEqual(['Sealed', '1 view left', 'Expires in 23 hours']);
     const mobile = viewport.width <= 640;
     items.forEach((item, index) => {
       const startsLine = index === 0 || item.top > (items[index - 1]?.top ?? 0);
       expect(item.visibleRule, item.text).toBe(!mobile && !startsLine);
     });
     if (viewport.width === 641) {
-      expect(new Set(items.map(({ top }) => top)).size, 'the strip wraps at 641px').toBe(2);
+      expect(new Set(items.map(({ top }) => top)).size, 'one line at 641px').toBe(1);
+    }
+    if (mobile) {
+      expect(new Set(items.map(({ top }) => top)).size, 'the strip wraps on a phone').toBe(2);
     }
   });
 }

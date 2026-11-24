@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { SOURCE_URL } from './e2e/buildEnv';
 
 const PORT = Number(process.env.E2E_PORT ?? 4180);
 const OUT_DIR = process.env.E2E_OUT_DIR ?? 'dist';
@@ -26,6 +27,8 @@ export default defineConfig({
   webServer: {
     command: `npm run build -- --outDir "${OUT_DIR}" --emptyOutDir && npm run preview -- --outDir "${OUT_DIR}" --host ${HOST} --port ${PORT} --strictPort`,
     url: BASE_URL,
+    // Production sets a source link, and without one there is no footer to lay out.
+    env: { VITE_SOURCE_URL: SOURCE_URL },
     reuseExistingServer: !isCi,
     timeout: 120_000,
   },

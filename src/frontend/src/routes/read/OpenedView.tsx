@@ -11,9 +11,11 @@ import { viewsLeftLabel } from '../../lib/format';
 import { CodeViewer } from './CodeViewer/CodeViewer';
 import type { OpenedPaste } from './readState';
 import { useHasPassed } from './useHasPassed';
+import styles from './ReadRoute.module.css';
 
 const DESTROYED_FOCUS_KEY = 'destroyed';
 const REVEALED_FOCUS_KEY = 'revealed';
+const COPY_NOW = "Copy what you need now. The link won't open it again.";
 
 export interface OpenedViewProps {
   readonly pasteId: string;
@@ -49,21 +51,22 @@ export function OpenedView({ pasteId, paste }: OpenedViewProps) {
           title="This paste is now destroyed"
           focusKey={DESTROYED_FOCUS_KEY}
         >
-          Copy what you need before leaving. Opening the link again will only show that it is gone.
+          {COPY_NOW}
         </Alert>
       )}
       {expired && (
         <Alert variant="warning" title="This paste has expired">
-          The server no longer has it. What is on this screen is the only copy left.
+          {COPY_NOW}
         </Alert>
       )}
       <Panel
         fullBleed
+        className={styles.pasteCard}
         strip={
           destroyed ? (
             <SealStrip state="destroyed" items={[viewsLeftLabel(paste.remainingViews)]} />
           ) : expired ? (
-            <SealStrip state="expired" items={['Only the copy on this screen remains']} />
+            <SealStrip state="expired" />
           ) : (
             <OpenedStrip paste={paste} />
           )

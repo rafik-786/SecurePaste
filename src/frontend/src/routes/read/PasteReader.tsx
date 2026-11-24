@@ -3,6 +3,7 @@ import { claimView, peekPaste } from '../../api/client';
 import { requestFailure } from '../../api/request';
 import type { ClaimResponse, PeekResponse } from '../../api/types';
 import { PageHeading } from '../../components/PageHeading';
+import { cx } from '../../lib/classNames';
 import { decryptPaste, parseKey } from '../../lib/crypto';
 import { preloadHighlighter } from '../../lib/highlight';
 import { PasteSkeleton } from '../shared/PasteSkeleton';
@@ -141,7 +142,7 @@ export function PasteReader({ id, fragmentKey }: PasteReaderProps) {
     }
     case 'open':
       return (
-        <div className={styles.page}>
+        <div className={cx(styles.page, styles.opened)}>
           <PageHeading>{READ_HEADING}</PageHeading>
           <OpenedView pasteId={id} paste={state.paste} />
         </div>

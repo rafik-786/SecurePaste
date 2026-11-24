@@ -3,8 +3,13 @@ import { StatusPage } from '../../components/StatusPage';
 import { viewsRemainSentence } from '../../lib/format';
 import { CreatePasteLink } from '../shared/CreatePasteLink';
 import { RateLimitedStatus } from '../shared/RateLimitedStatus';
+import { GONE_REASONS } from '../shared/statusCopy';
 import { TryAgainButton } from '../shared/TryAgainButton';
 import type { ReadStatusState } from './readState';
+
+const ASK_FOR_FULL_LINK = 'Ask the sender for the full link.';
+const VIEW_MAY_BE_USED = "A view may have been used. Try again to see what's left.";
+const DECRYPT_FAILED = "The key doesn't match, or the data was changed. A view was used.";
 
 export interface ReadStatusProps {
   readonly state: ReadStatusState;
@@ -23,10 +28,7 @@ export function LinkProblemStatus({ problem }: LinkProblemStatusProps) {
       title="This link is not valid"
       actions={<CreatePasteLink />}
     >
-      <p>
-        The paste ID in this link is malformed, so there is nothing to look up. Check that the whole
-        link was copied. Nothing was used.
-      </p>
+      <p>No view was used. {ASK_FOR_FULL_LINK}</p>
     </StatusPage>
   ) : (
     <StatusPage
@@ -35,10 +37,7 @@ export function LinkProblemStatus({ problem }: LinkProblemStatusProps) {
       title="This link is incomplete"
       actions={<CreatePasteLink />}
     >
-      <p>
-        The part after the # is missing or damaged. That part is the decryption key, so the paste
-        cannot be opened without it. Ask the sender for the full link. No view was used.
-      </p>
+      <p>The part after the # is missing or damaged. No view was used. {ASK_FOR_FULL_LINK}</p>
     </StatusPage>
   );
 }
@@ -57,10 +56,7 @@ export function ReadStatus({ state, onRetry }: ReadStatusProps) {
           title="No paste at this link"
           actions={<CreatePasteLink />}
         >
-          <p>
-            The link may be mistyped, or the paste expired a while ago and was cleaned up. Check the
-            link with the sender.
-          </p>
+          <p>Check the link with the sender.</p>
         </StatusPage>
       );
     case 'gone':
@@ -71,9 +67,9 @@ export function ReadStatus({ state, onRetry }: ReadStatusProps) {
           title="This paste is gone"
           actions={<CreatePasteLink />}
         >
-          <p>It expired, reached its view limit, or was deleted. SecurePaste does not say which.</p>
+          <p>{GONE_REASONS}</p>
           <p>
-            If you have not opened this link before, tell the sender: someone else may have read it.
+            If you haven't opened this link before, tell the sender. Someone else may have read it.
           </p>
         </StatusPage>
       );
@@ -83,26 +79,20 @@ export function ReadStatus({ state, onRetry }: ReadStatusProps) {
         <StatusPage
           icon={AlertIcon}
           tone="danger"
-          title="Corrupted data or wrong key"
+          title="This paste could not be decrypted"
           actions={<CreatePasteLink />}
         >
           <p>
-            The paste could not be decrypted, so nothing is shown. A partial result could be
-            misleading.
+            {viewsSentence === undefined ? DECRYPT_FAILED : `${DECRYPT_FAILED} ${viewsSentence}`}
           </p>
-          <p>
-            {viewsSentence === undefined
-              ? 'This view was counted.'
-              : `This view was counted. ${viewsSentence}`}
-          </p>
-          <p>Ask the sender to check the link, or to create a new paste.</p>
+          <p>Ask the sender for a new link.</p>
         </StatusPage>
       );
     }
     case 'rate-limited':
       return (
         <RateLimitedStatus error={state.error} onRetry={onRetry} actions={<CreatePasteLink />}>
-          Your network has made too many requests in the last minute. No view was used.
+          No view was used.
         </RateLimitedStatus>
       );
     case 'check-failed':
@@ -113,29 +103,21 @@ export function ReadStatus({ state, onRetry }: ReadStatusProps) {
           title="Could not reach the server"
           actions={retry}
         >
-          <p>Check your connection and try again. Nothing was used.</p>
+          <p>No view was used. Check your connection and try again.</p>
         </StatusPage>
       ) : (
         <StatusPage icon={AlertIcon} tone="danger" title="The server hit an error" actions={retry}>
-          <p>Try again in a moment. Nothing was used.</p>
+          <p>No view was used. Try again in a moment.</p>
         </StatusPage>
       );
     case 'reveal-failed':
       return state.cause === 'network' ? (
-        <StatusPage
-          icon={OfflineIcon}
-          tone="danger"
-          title="The connection dropped while revealing"
-          actions={retry}
-        >
-          <p>
-            If the request reached the server, a view may have been used. Try again to see what is
-            left.
-          </p>
+        <StatusPage icon={OfflineIcon} tone="danger" title="The connection dropped" actions={retry}>
+          <p>{VIEW_MAY_BE_USED}</p>
         </StatusPage>
       ) : (
         <StatusPage icon={AlertIcon} tone="danger" title="The server hit an error" actions={retry}>
-          <p>A view may have been used. Try again to see what is left.</p>
+          <p>{VIEW_MAY_BE_USED}</p>
         </StatusPage>
       );
   }

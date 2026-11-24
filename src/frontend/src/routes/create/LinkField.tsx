@@ -5,21 +5,29 @@ import { cx } from '../../lib/classNames';
 import { NO_TRANSLATE_CLASS, SECRET_FIELD_PROPS } from '../../lib/leakPrevention';
 import styles from './LinkField.module.css';
 
+export type LinkEmphasis = 'primary' | 'secondary';
+
 export interface LinkFieldProps {
   readonly heading: string;
   readonly link: string;
+  readonly emphasis: LinkEmphasis;
   readonly copyLabel: string;
+  readonly copyName?: string | undefined;
   readonly copiedAnnouncement: string;
   readonly description: string;
+  readonly className?: string | undefined;
   readonly copyRef?: Ref<HTMLButtonElement>;
 }
 
 export function LinkField({
   heading,
   link,
+  emphasis,
   copyLabel,
+  copyName,
   copiedAnnouncement,
   description,
+  className,
   copyRef,
 }: LinkFieldProps) {
   const headingId = useId();
@@ -28,9 +36,10 @@ export function LinkField({
   const field = useRef<HTMLInputElement>(null);
   const selectOnPointerUp = useRef(false);
   const [blocked, setBlocked] = useState(false);
+  const primary = emphasis === 'primary';
 
   return (
-    <div className={styles.linkField}>
+    <div className={cx(styles.linkField, primary ? styles.primary : styles.secondary, className)}>
       <h2 id={headingId} className={styles.heading}>
         {heading}
       </h2>
@@ -60,9 +69,12 @@ export function LinkField({
         />
         <CopyButton
           ref={copyRef ?? null}
+          variant={emphasis}
+          size={primary ? 'lg' : 'md'}
           className={styles.copy}
           text={link}
           label={copyLabel}
+          idleName={copyName}
           copiedAnnouncement={copiedAnnouncement}
           selectOnFailure={field}
           aria-describedby={descriptionId}
@@ -71,7 +83,7 @@ export function LinkField({
           }}
         />
       </div>
-      {blocked && <CopyBlockedHint id={blockedId} />}
+      {blocked && <CopyBlockedHint id={blockedId} className={styles.description} />}
       <p id={descriptionId} className={styles.description}>
         {description}
       </p>

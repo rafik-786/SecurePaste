@@ -11,9 +11,6 @@ const ReadRoute = lazy(() =>
 const DeleteRoute = lazy(() =>
   import('../routes/delete/DeleteRoute').then((module) => ({ default: module.DeleteRoute })),
 );
-const AboutRoute = lazy(() =>
-  import('../routes/about/AboutRoute').then((module) => ({ default: module.AboutRoute })),
-);
 const NotFoundRoute = lazy(() =>
   import('../routes/notFound/NotFoundRoute').then((module) => ({ default: module.NotFoundRoute })),
 );
@@ -30,7 +27,6 @@ export function AppRoutes() {
         <Route path="/" element={<CreateRouteForLocation />} />
         <Route path="/p/:id" element={<ReadRoute />} />
         <Route path="/d/:id" element={<DeleteRoute />} />
-        <Route path="/about" element={<AboutRoute />} />
         <Route path="*" element={<NotFoundRoute />} />
       </Routes>
     </Suspense>

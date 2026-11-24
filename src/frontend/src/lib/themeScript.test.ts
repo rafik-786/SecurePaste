@@ -21,17 +21,23 @@ describe('public/theme.js', () => {
     expect(source).toContain(`'${THEME_ATTRIBUTE}'`);
   });
 
-  it.each(['light', 'dark'])('applies a stored %s choice before the app loads', (theme) => {
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  it('applies a stored light choice before the app loads', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'light');
 
     runThemeScript();
 
-    expect(root.getAttribute(THEME_ATTRIBUTE)).toBe(theme);
+    expect(root.getAttribute(THEME_ATTRIBUTE)).toBe('light');
   });
 
-  it('leaves the system in charge without a valid choice', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'sepia');
+  it.each(['dark', 'sepia'])('leaves the default dark theme for a stored %s', (value) => {
+    localStorage.setItem(THEME_STORAGE_KEY, value);
 
+    runThemeScript();
+
+    expect(root.hasAttribute(THEME_ATTRIBUTE)).toBe(false);
+  });
+
+  it('leaves the default dark theme without a choice', () => {
     runThemeScript();
 
     expect(root.hasAttribute(THEME_ATTRIBUTE)).toBe(false);

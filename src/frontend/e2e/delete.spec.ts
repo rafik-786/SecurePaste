@@ -18,22 +18,14 @@ test('delete journey: nothing is deleted on load, the DELETE carries the token, 
   await expect(page).toHaveTitle('Delete this paste? - SecurePaste');
   await expect(page.getByText('Sealed')).toBeVisible();
   await expect(page.getByText('1 view left')).toBeVisible();
-  await expect(
-    page.getByText(
-      'Deleting destroys the encrypted content on the server now. Anyone who opens the share link afterwards will see that the paste is gone. This cannot be undone.',
-    ),
-  ).toBeVisible();
+  await expect(page.getByText("The link will stop working. You can't undo this.")).toBeVisible();
   await page.waitForLoadState('networkidle');
   expect(api.calls.map(({ method }) => method)).toEqual(['GET']);
 
   await page.getByRole('button', { name: 'Delete paste' }).click();
 
   await expect(page.getByRole('heading', { level: 1, name: 'Paste deleted' })).toBeFocused();
-  await expect(
-    page.getByText(
-      'The encrypted content is destroyed. The share link now shows that the paste is gone.',
-    ),
-  ).toBeVisible();
+  await expect(page.getByText('The link no longer works.')).toBeVisible();
   expect(api.calls.map(({ method }) => method)).toEqual(['GET', 'DELETE']);
   const deletion = api.calls[1]?.request;
   expect(deletion ? await deletion.headerValue('X-Delete-Token') : null).toBe(TOKEN);
@@ -61,7 +53,7 @@ test('a wrong token gets 403 and the mismatch page', async ({ page, guard }) => 
   await page.getByRole('button', { name: 'Delete paste' }).click();
 
   await expect(
-    page.getByRole('heading', { level: 1, name: 'This delete link does not match' }),
+    page.getByRole('heading', { level: 1, name: "This delete link doesn't match" }),
   ).toBeFocused();
   await guard.expectHttpError(403);
 });
@@ -113,7 +105,7 @@ for (const viewport of [
     const keep = page.getByRole('button', { name: 'Keep it' });
     await expect(keep).toBeVisible();
     const after = await page
-      .getByText('This cannot be undone.', { exact: false })
+      .getByText("You can't undo this.", { exact: false })
       .evaluate((element) => element.parentElement?.getBoundingClientRect().height);
 
     expect(after).toBe(before);

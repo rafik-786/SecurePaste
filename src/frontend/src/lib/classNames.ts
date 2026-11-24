@@ -1,3 +1,5 @@
+export const GLASS_CLASS = 'glass';
+
 export type ClassName = string | false | null | undefined;
 
 export function cx(...names: readonly ClassName[]): string {

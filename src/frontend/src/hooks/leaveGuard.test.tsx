@@ -32,7 +32,6 @@ function renderGuarded() {
         <Header />
         <Routes>
           <Route path="/p/:id" element={<GuardedScreen />} />
-          <Route path="/about" element={<h1>About page</h1>} />
           <Route path="/" element={<h1>Home page</h1>} />
         </Routes>
       </AppProviders>
@@ -51,30 +50,28 @@ afterEach(() => {
 });
 
 describe('leave guard', () => {
-  it('lets the header links navigate freely while nothing is at stake', async () => {
+  it('lets the wordmark navigate freely while nothing is at stake', async () => {
     const user = userEvent.setup();
     const confirm = vi.spyOn(window, 'confirm');
     renderGuarded();
 
-    await user.click(screen.getByRole('link', { name: 'About' }));
+    await user.click(screen.getByRole('link', { name: 'SecurePaste' }));
 
     expect(confirm).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { name: 'About page' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Home page' })).toBeInTheDocument();
     expect(fireBeforeUnload().defaultPrevented).toBe(false);
   });
 
-  it('asks before the About link leaves a destroyed paste, and stays when cancelled', async () => {
+  it('asks before the wordmark leaves a destroyed paste, and stays when cancelled', async () => {
     const user = userEvent.setup();
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     renderGuarded();
     await user.click(screen.getByRole('button', { name: 'Toggle destroyed' }));
 
-    await user.click(screen.getByRole('link', { name: 'About' }));
+    await user.click(screen.getByRole('link', { name: 'SecurePaste' }));
 
     expect(confirm).toHaveBeenCalledWith(LEAVE_PROMPT);
-    expect(LEAVE_PROMPT).toBe(
-      'This paste is destroyed and cannot be shown again. Leave this page?',
-    );
+    expect(LEAVE_PROMPT).toBe("This paste can't be opened again. Leave this page?");
     expect(screen.getByRole('heading', { name: 'Encrypted paste' })).toBeInTheDocument();
   });
 
@@ -108,7 +105,8 @@ describe('leave guard', () => {
     renderGuarded();
     await user.click(screen.getByRole('button', { name: 'Toggle destroyed' }));
 
-    await user.click(screen.getByRole('link', { name: 'About' }));
+    await user.click(screen.getByRole('link', { name: 'SecurePaste' }));
+    expect(screen.getByRole('heading', { name: 'Home page' })).toBeInTheDocument();
     const confirm = vi.spyOn(window, 'confirm');
     confirm.mockClear();
     await user.click(screen.getByRole('link', { name: 'SecurePaste' }));

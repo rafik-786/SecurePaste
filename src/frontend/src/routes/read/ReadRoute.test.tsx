@@ -27,6 +27,10 @@ const CONTENT = '# staging database\nexport DB_HOST=db.internal\nexport DB_PASSW
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 const HEADING = 'Encrypted paste';
+const COPY_NOW = "Copy what you need now. The link won't open it again.";
+const CORRUPTED = 'This paste could not be decrypted';
+const DECRYPT_FAILED = "The key doesn't match, or the data was changed. A view was used.";
+const VIEW_MAY_BE_USED = "A view may have been used. Try again to see what's left.";
 
 let api: FakeApi;
 let paste: SealedPaste;
@@ -88,7 +92,7 @@ describe('read route, local checks', () => {
     renderRead(`/p/NOT-AN-ID#${VALID_KEY}`);
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'This browser cannot encrypt here' }),
+      screen.getByRole('heading', { level: 1, name: "Encryption isn't available here" }),
     ).toBeInTheDocument();
     expect(api.calls).toEqual([]);
   });
@@ -102,9 +106,7 @@ describe('read route, local checks', () => {
         screen.getByRole('heading', { level: 1, name: 'This link is not valid' }),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'The paste ID in this link is malformed, so there is nothing to look up. Check that the whole link was copied. Nothing was used.',
-        ),
+        screen.getByText('No view was used. Ask the sender for the full link.'),
       ).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Create a paste' })).toHaveAttribute('href', '/');
       expect(document.title).toBe('This link is not valid - SecurePaste');
@@ -130,7 +132,7 @@ describe('read route, local checks', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'The part after the # is missing or damaged. That part is the decryption key, so the paste cannot be opened without it. Ask the sender for the full link. No view was used.',
+        'The part after the # is missing or damaged. No view was used. Ask the sender for the full link.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Create a paste' })).toHaveAttribute('href', '/');
@@ -177,14 +179,14 @@ describe('read route, interstitial', () => {
     expect(screen.getByText('Sealed')).toBeInTheDocument();
     expect(screen.getByText('1 view left')).toBeInTheDocument();
     expect(screen.getByText('Expires in 23 hours')).toBeInTheDocument();
-    expect(screen.getByText('136 bytes encrypted')).toBeInTheDocument();
+    expect(screen.getByText('Sealed').closest('div')).toHaveTextContent(
+      /^Sealed 1 view left Expires in 23 hours$/,
+    );
     expect(
-      screen.getByText('This is the last view. After you reveal it, the paste is destroyed.'),
+      screen.getByText('This is the last view. Revealing it destroys the paste.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Decryption happens in this browser. The key in the link never reaches the server.',
-      ),
+      screen.getByText('Decrypted in this browser. The key never reaches the server.'),
     ).toBeInTheDocument();
     expect(reveal).not.toHaveAttribute('aria-disabled');
     expect(api.count('POST', CLAIM)).toBe(0);
@@ -197,7 +199,7 @@ describe('read route, interstitial', () => {
 
     expect(await screen.findByRole('button', { name: 'Reveal paste' })).toBeInTheDocument();
     expect(screen.getByText('5 views left')).toBeInTheDocument();
-    expect(screen.getByText('Revealing uses 1 of 5 remaining views.')).toBeInTheDocument();
+    expect(screen.getByText('Revealing uses 1 of 5 views.')).toBeInTheDocument();
     expect(api.count('POST', CLAIM)).toBe(0);
   });
 
@@ -244,9 +246,7 @@ describe('read route, reveal', () => {
     await user.click(await screen.findByRole('button', { name: 'Reveal and destroy' }));
 
     const callout = await screen.findByRole('group', { name: 'This paste is now destroyed' });
-    expect(callout).toHaveTextContent(
-      'Copy what you need before leaving. Opening the link again will only show that it is gone.',
-    );
+    expect(callout).toHaveTextContent(COPY_NOW);
     await expectFocus(callout);
     const code = region();
     expect(callout.compareDocumentPosition(code) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -328,11 +328,11 @@ describe('read route, unlimited pastes', () => {
 
 describe('read route, decryption failures', () => {
   it.each([
-    { remaining: 0, sentence: 'This view was counted. The paste is now destroyed.' },
-    { remaining: 3, sentence: 'This view was counted. 3 views remain.' },
-    { remaining: 1, sentence: 'This view was counted. 1 view remains.' },
-    { remaining: null, sentence: 'This view was counted.' },
-  ])('owns up to the counted view ($remaining left) on tampered data', async (row) => {
+    { remaining: 0, sentence: DECRYPT_FAILED },
+    { remaining: 3, sentence: `${DECRYPT_FAILED} 3 views remain.` },
+    { remaining: 1, sentence: `${DECRYPT_FAILED} 1 view remains.` },
+    { remaining: null, sentence: DECRYPT_FAILED },
+  ])('owns up to the used view ($remaining left) on tampered data', async (row) => {
     const user = userEvent.setup();
     api.reply('GET', PEEK, peekReply(row.remaining === null ? null : row.remaining + 1));
     api.reply('POST', CLAIM, claimReply(row.remaining, tamper(paste.ciphertext)));
@@ -344,18 +344,11 @@ describe('read route, decryption failures', () => {
 
     const heading = await screen.findByRole('heading', {
       level: 1,
-      name: 'Corrupted data or wrong key',
+      name: CORRUPTED,
     });
     await expectFocus(heading);
-    expect(
-      screen.getByText(
-        'The paste could not be decrypted, so nothing is shown. A partial result could be misleading.',
-      ),
-    ).toBeInTheDocument();
     expect(screen.getByText(row.sentence, { exact: true })).toBeInTheDocument();
-    expect(
-      screen.getByText('Ask the sender to check the link, or to create a new paste.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Ask the sender for a new link.')).toBeInTheDocument();
     expect(screen.queryByRole('region')).toBeNull();
     expect(document.body).not.toHaveTextContent('hunter2');
   });
@@ -368,9 +361,7 @@ describe('read route, decryption failures', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Reveal and destroy' }));
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Corrupted data or wrong key' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: CORRUPTED })).toBeInTheDocument();
   });
 
   it.each([
@@ -387,10 +378,8 @@ describe('read route, decryption failures', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Reveal paste' }));
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Corrupted data or wrong key' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('This view was counted. 1 view remains.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: CORRUPTED })).toBeInTheDocument();
+    expect(screen.getByText(`${DECRYPT_FAILED} 1 view remains.`)).toBeInTheDocument();
   });
 });
 
@@ -423,14 +412,10 @@ describe('read route, server answers', () => {
     renderRead(readUrl());
 
     await screen.findByRole('heading', { level: 1, name: 'This paste is gone' });
+    expect(screen.getByText('It expired, was read, or was deleted.')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'It expired, reached its view limit, or was deleted. SecurePaste does not say which.',
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'If you have not opened this link before, tell the sender: someone else may have read it.',
+        "If you haven't opened this link before, tell the sender. Someone else may have read it.",
       ),
     ).toBeInTheDocument();
   });
@@ -440,28 +425,24 @@ describe('read route, server answers', () => {
     renderRead(readUrl());
 
     await screen.findByRole('heading', { level: 1, name: 'No paste at this link' });
-    expect(
-      screen.getByText(
-        'The link may be mistyped, or the paste expired a while ago and was cleaned up. Check the link with the sender.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Check the link with the sender.')).toBeInTheDocument();
   });
 
   it.each([
     {
       reply: 'network-error' as const,
       title: 'Could not reach the server',
-      body: 'Check your connection and try again. Nothing was used.',
+      body: 'No view was used. Check your connection and try again.',
     },
     {
       reply: problemReply(503),
       title: 'The server hit an error',
-      body: 'Try again in a moment. Nothing was used.',
+      body: 'No view was used. Try again in a moment.',
     },
     {
       reply: { status: 200, body: { nonsense: true } },
       title: 'The server hit an error',
-      body: 'Try again in a moment. Nothing was used.',
+      body: 'No view was used. Try again in a moment.',
     },
   ])('a failed check reads "$title" and Try again re-peeks', async ({ reply, title, body }) => {
     const user = userEvent.setup();
@@ -482,13 +463,13 @@ describe('read route, server answers', () => {
   it.each([
     {
       reply: 'network-error' as const,
-      title: 'The connection dropped while revealing',
-      body: 'If the request reached the server, a view may have been used. Try again to see what is left.',
+      title: 'The connection dropped',
+      body: VIEW_MAY_BE_USED,
     },
     {
       reply: problemReply(500),
       title: 'The server hit an error',
-      body: 'A view may have been used. Try again to see what is left.',
+      body: VIEW_MAY_BE_USED,
     },
   ])('a failed reveal reads "$title" and Try again never re-claims', async (row) => {
     const user = userEvent.setup();
@@ -502,7 +483,7 @@ describe('read route, server answers', () => {
 
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByText('Revealing uses 1 of 2 remaining views.')).toBeInTheDocument();
+    expect(await screen.findByText('Revealing uses 1 of 2 views.')).toBeInTheDocument();
     expect(api.count('GET', PEEK)).toBe(2);
     expect(api.count('POST', CLAIM)).toBe(1);
   });
@@ -515,7 +496,7 @@ describe('read route, server answers', () => {
 
     await screen.findByRole('heading', {
       level: 1,
-      name: 'The connection dropped while revealing',
+      name: 'The connection dropped',
     });
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
@@ -538,11 +519,7 @@ describe('read route, server answers', () => {
     await user.click(await screen.findByRole('button', { name: 'Reveal and destroy' }));
 
     await expectFocus(await screen.findByRole('heading', { level: 1, name: 'Too many requests' }));
-    expect(
-      screen.getByText(
-        'Your network has made too many requests in the last minute. No view was used.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('No view was used.')).toBeInTheDocument();
     expect(screen.getByText('You can try again in 2 seconds.')).toBeInTheDocument();
     const tryAgain = screen.getByRole('button', { name: 'Try again' });
     expect(tryAgain).toHaveAttribute('aria-disabled', 'true');
@@ -584,12 +561,9 @@ describe('read route, expiry while open', () => {
     });
 
     const callout = screen.getByRole('group', { name: 'This paste has expired' });
-    expect(callout).toHaveTextContent(
-      'The server no longer has it. What is on this screen is the only copy left.',
-    );
+    expect(callout).toHaveTextContent(COPY_NOW);
     expect(callout).not.toHaveFocus();
-    expect(screen.getByText('Expired')).toBeInTheDocument();
-    expect(screen.getByText('Only the copy on this screen remains')).toBeInTheDocument();
+    expect(screen.getByText('Expired').closest('div')).toHaveTextContent(/^Expired$/);
     expect(screen.queryByText('Opened')).toBeNull();
     expect(
       callout.compareDocumentPosition(region()) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -600,7 +574,7 @@ describe('read route, expiry while open', () => {
 });
 
 describe('read route inside the app', () => {
-  it('asks before the header links leave a destroyed paste', async () => {
+  it('asks before the wordmark leaves a destroyed paste', async () => {
     const user = userEvent.setup();
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
     api.reply('GET', PEEK, peekReply(1));
@@ -609,9 +583,7 @@ describe('read route inside the app', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Reveal and destroy' }));
     await screen.findByRole('group', { name: 'This paste is now destroyed' });
-    await user.click(
-      within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'About' }),
-    );
+    await user.click(within(screen.getByRole('banner')).getByRole('link', { name: 'SecurePaste' }));
 
     expect(confirm).toHaveBeenCalledWith(LEAVE_PROMPT);
     expect(region()).toBeInTheDocument();

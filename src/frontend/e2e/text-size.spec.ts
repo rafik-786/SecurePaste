@@ -60,7 +60,11 @@ function layoutProblems(page: Page): Promise<string[]> {
       element.closest('.visually-hidden') !== null || element.getBoundingClientRect().width === 0;
     const boxed = (element: Element) => {
       const style = getComputedStyle(element);
-      return parseFloat(style.borderLeftWidth) > 0 && parseFloat(style.borderRightWidth) > 0;
+      return (
+        style.display !== 'contents' &&
+        parseFloat(style.borderLeftWidth) > 0 &&
+        parseFloat(style.borderRightWidth) > 0
+      );
     };
     const textBoxes = (root: Element) => {
       const boxes: { readonly text: string; readonly rect: DOMRect; readonly parent: Element }[] =
@@ -200,7 +204,7 @@ for (const width of WIDTHS) {
         const count = page.getByRole('textbox', { name: 'Number of views' });
         await count.fill('0');
         await page.getByRole('button', { name: SUBMIT }).click();
-        await expect(page.getByText('Paste some text first.')).toBeVisible();
+        await expect(page.getByText('Add some text first.')).toBeVisible();
         await expect(page.getByText('Enter a whole number from 1 to 100.')).toBeVisible();
         await expectToHold(page, 'create invalid');
 
@@ -273,11 +277,7 @@ for (const width of WIDTHS) {
         await expectToHold(page, 'delete confirm');
       });
 
-      test('About and Page not found hold the screen', async ({ page }) => {
-        await page.goto('/about');
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-        await expectToHold(page, 'about');
-
+      test('Page not found holds the screen', async ({ page }) => {
         await page.goto('/nowhere');
         await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
         await expectToHold(page, 'not found');

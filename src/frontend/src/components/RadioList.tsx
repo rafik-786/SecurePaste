@@ -6,7 +6,6 @@ import styles from './RadioList.module.css';
 export interface RadioOption<T extends string> {
   readonly value: T;
   readonly label: ReactNode;
-  readonly hint: string;
 }
 
 export interface RadioListProps<T extends string> {
@@ -41,30 +40,23 @@ export function RadioList<T extends string>({
       <div className={styles.rows}>
         {options.map((option) => {
           const labelId = `${baseId}-${option.value}-label`;
-          const hintId = `${baseId}-${option.value}-hint`;
           return (
             <label key={option.value} className={styles.row}>
-              <span className={styles.choice}>
-                <input
-                  className={styles.radio}
-                  type="radio"
-                  name={name}
-                  value={option.value}
-                  checked={option.value === value}
-                  aria-labelledby={labelId}
-                  aria-describedby={hintId}
-                  onChange={() => {
-                    if (!busy) {
-                      onChange(option.value);
-                    }
-                  }}
-                />
-                <span id={labelId} className={styles.label}>
-                  {option.label}
-                </span>
-              </span>
-              <span id={hintId} className={styles.hint}>
-                {option.hint}
+              <input
+                className={styles.radio}
+                type="radio"
+                name={name}
+                value={option.value}
+                checked={option.value === value}
+                aria-labelledby={labelId}
+                onChange={() => {
+                  if (!busy) {
+                    onChange(option.value);
+                  }
+                }}
+              />
+              <span id={labelId} className={styles.label}>
+                {option.label}
               </span>
             </label>
           );

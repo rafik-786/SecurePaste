@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { effectiveTheme, subscribeToTheme, type Theme } from '../lib/theme';
+import { currentTheme, DEFAULT_THEME, subscribeToTheme, type Theme } from '../lib/theme';
 
 export function useTheme(): Theme {
-  return useSyncExternalStore(subscribeToTheme, effectiveTheme, () => 'light');
+  return useSyncExternalStore(subscribeToTheme, currentTheme, () => DEFAULT_THEME);
 }

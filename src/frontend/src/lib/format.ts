@@ -100,18 +100,14 @@ export function viewsLeftLabel(remainingViews: number | null): string {
 
 export function revealCostSentence(remainingViews: number): string {
   return remainingViews <= 1
-    ? 'This is the last view. After you reveal it, the paste is destroyed.'
-    : `Revealing uses 1 of ${countFormat.format(remainingViews)} remaining views.`;
+    ? 'This is the last view. Revealing it destroys the paste.'
+    : `Revealing uses 1 of ${countFormat.format(remainingViews)} views.`;
 }
 
 export function viewsRemainSentence(remainingViews: number | null): string | undefined {
-  if (remainingViews === null) {
-    return undefined;
-  }
-  if (remainingViews === 0) {
-    return 'The paste is now destroyed.';
-  }
-  return `${counted(remainingViews, 'view remains', 'views remain')}.`;
+  return remainingViews === null || remainingViews === 0
+    ? undefined
+    : `${counted(remainingViews, 'view remains', 'views remain')}.`;
 }
 
 export function viewsSettingLabel(maxViews: number | null): string {
@@ -121,23 +117,21 @@ export function viewsSettingLabel(maxViews: number | null): string {
   return maxViews === 1 ? 'Burn after reading' : counted(maxViews, 'view', 'views');
 }
 
-export function viewsSettingSentence(maxViews: number | null): string {
+export function shareLinkHelp(maxViews: number | null): string {
   if (maxViews === null) {
-    return 'It can be opened any number of times until it expires.';
+    return 'Anyone with this link can read it until it expires.';
   }
   return maxViews === 1
-    ? 'It works once: opening it yourself uses the only view.'
-    : `It can be opened ${countFormat.format(maxViews)} times, including by you.`;
+    ? "Anyone with this link can read it once. Don't test it yourself."
+    : `Anyone with this link can read it ${countFormat.format(maxViews)} times.`;
 }
 
 export function formatShortcut(key: string, apple: boolean): string {
   return `${apple ? 'Cmd' : 'Ctrl'}+${key}`;
 }
 
-export function copyBlockedAnnouncement(apple: boolean): string {
-  return `Copying was blocked. Select the text and press ${formatShortcut('C', apple)}.`;
-}
-
-export function copyBlockedHint(apple: boolean): string {
-  return `Copying was blocked by the browser. The text is selected: press ${formatShortcut('C', apple)}.`;
+export function copyBlockedMessage(apple: boolean, finePointer: boolean): string {
+  return finePointer
+    ? `Copying was blocked. Press ${formatShortcut('C', apple)}.`
+    : 'Copying was blocked. Touch and hold the text, then tap Copy.';
 }

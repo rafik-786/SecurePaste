@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { cx } from '../lib/classNames';
+import { cx, GLASS_CLASS } from '../lib/classNames';
 import styles from './Panel.module.css';
 
 export interface PanelProps {
@@ -18,7 +18,7 @@ export function Panel({
   bodyClassName,
 }: PanelProps) {
   return (
-    <div className={cx(styles.panel, fullBleed && styles.fullBleed, className)}>
+    <div className={cx(GLASS_CLASS, styles.panel, fullBleed && styles.fullBleed, className)}>
       {strip}
       {fullBleed
         ? children

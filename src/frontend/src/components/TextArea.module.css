@@ -10,7 +10,7 @@
   padding: var(--space-3) var(--space-4);
   border: var(--border-hairline) solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  background-color: var(--color-code-bg);
+  background-color: var(--glass-bg-strong);
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--text-sm);

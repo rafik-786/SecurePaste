@@ -21,7 +21,7 @@ function ViewsGroup({ error }: { readonly error?: string }) {
       error={error}
       errorId={errorId}
       options={[
-        { value: 'burn', label: 'Burn after reading', hint: 'Destroyed after the first view.' },
+        { value: 'burn', label: 'Burn after reading' },
         {
           value: 'limit',
           label: (
@@ -42,36 +42,33 @@ function ViewsGroup({ error }: { readonly error?: string }) {
               views
             </>
           ),
-          hint: 'Destroyed after the last view.',
         },
-        {
-          value: 'unlimited',
-          label: 'Unlimited',
-          hint: 'Anyone with the link can open it until it expires.',
-        },
+        { value: 'unlimited', label: 'Unlimited' },
       ]}
     />
   );
 }
 
 describe('RadioList', () => {
-  it('names each radio by its label and describes it by its hint', () => {
+  it('names each radio by its label and gives it no description', () => {
     render(<ViewsGroup />);
 
     expect(screen.getByRole('group', { name: 'Views' })).toBeInTheDocument();
     const burn = screen.getByRole('radio', { name: 'Burn after reading' });
     expect(burn).toBeChecked();
-    expect(burn).toHaveAccessibleDescription('Destroyed after the first view.');
-    expect(screen.getByRole('radio', { name: 'Limit to 5 views' })).toHaveAccessibleDescription(
-      'Destroyed after the last view.',
-    );
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).not.toHaveAttribute('aria-describedby');
+    }
+    expect(screen.getByRole('radio', { name: 'Limit to 5 views' })).not.toBeChecked();
   });
 
-  it('makes the whole row the click target, hint included', async () => {
+  it('makes the whole row the click target', async () => {
     const user = userEvent.setup();
     render(<ViewsGroup />);
 
-    await user.click(screen.getByText('Anyone with the link can open it until it expires.'));
+    const row = screen.getByText('Unlimited').closest('label');
+    expect(row).not.toBeNull();
+    await user.click(row ?? document.body);
 
     expect(screen.getByRole('radio', { name: 'Unlimited' })).toBeChecked();
   });

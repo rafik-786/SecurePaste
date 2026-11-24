@@ -1,41 +1,46 @@
-/* Both link fields share the columns of the grid around them, so their copy buttons take the
-   width of the longer label and the inputs end at the same edge. */
 .linkField {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
+  display: flex;
+  flex-direction: column;
   min-inline-size: 0;
-}
-
-.linkField > * {
-  grid-column: 1 / -1;
 }
 
 .heading {
   margin-block-end: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-normal);
+}
+
+.secondary .heading {
+  color: var(--color-text-secondary);
 }
 
 .row {
-  display: grid;
-  grid-template-columns: subgrid;
-  align-items: center;
-  row-gap: var(--space-3);
+  display: flex;
+  gap: var(--space-3);
 }
 
 .input {
+  flex: 1 1 0;
   inline-size: 100%;
   min-inline-size: 0;
   block-size: var(--control-height-md);
   padding: 0 var(--space-3);
   border: var(--border-hairline) solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  background-color: var(--color-code-bg);
+  background-color: var(--glass-bg-strong);
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   line-height: var(--leading-normal);
   transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.primary .input {
+  block-size: var(--control-height-lg);
+  padding-inline: var(--space-4);
 }
 
 @media (hover: hover) {
@@ -50,7 +55,7 @@
 }
 
 .copy {
-  justify-self: stretch;
+  flex-shrink: 0;
 }
 
 .description {
@@ -61,7 +66,7 @@
 }
 
 @media (pointer: coarse) {
-  .input {
+  .secondary .input {
     block-size: var(--control-height-touch);
   }
 }
@@ -69,5 +74,13 @@
 @media (max-width: 40em) {
   .input {
     font-size: var(--text-md);
+  }
+
+  .row {
+    flex-direction: column;
+  }
+
+  .input {
+    flex: none;
   }
 }

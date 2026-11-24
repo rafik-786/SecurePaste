@@ -58,10 +58,7 @@ function ConfirmPanel({ paste, deleting, onDelete, onKeep }: ConfirmPanelProps) 
       }
       bodyClassName={styles.confirmBody}
     >
-      <p>
-        Deleting destroys the encrypted content on the server now. Anyone who opens the share link
-        afterwards will see that the paste is gone. This cannot be undone.
-      </p>
+      <p>The link will stop working. You can't undo this.</p>
       <ActionRow className={styles.actions}>
         <Button
           variant="danger"

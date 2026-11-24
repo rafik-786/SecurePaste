@@ -15,7 +15,6 @@ function Expiry({ busy = false, onChange }: { busy?: boolean; onChange?: (id: Ex
       name="expiry"
       options={OPTIONS}
       value={value}
-      hint="Removed from the server at this time, even if nobody opened it."
       busy={busy}
       onChange={(next) => {
         setValue(next);
@@ -26,13 +25,11 @@ function Expiry({ busy = false, onChange }: { busy?: boolean; onChange?: (id: Ex
 }
 
 describe('SegmentedControl', () => {
-  it('is a named group of native radios with the hint as its description', () => {
+  it('is a named group of native radios with no description', () => {
     render(<Expiry />);
 
     const group = screen.getByRole('group', { name: 'Expires after' });
-    expect(group).toHaveAccessibleDescription(
-      'Removed from the server at this time, even if nobody opened it.',
-    );
+    expect(group).not.toHaveAttribute('aria-describedby');
     expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual([
       '15m',
       '1h',

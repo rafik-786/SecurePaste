@@ -1,6 +1,4 @@
-import { useId } from 'react';
 import { cx } from '../lib/classNames';
-import { FieldHint } from './Field';
 import styles from './SegmentedControl.module.css';
 
 export interface SegmentOption<T extends string> {
@@ -14,7 +12,6 @@ export interface SegmentedControlProps<T extends string> {
   readonly options: readonly SegmentOption<T>[];
   readonly value: T;
   readonly onChange: (value: T) => void;
-  readonly hint?: string | undefined;
   readonly busy?: boolean;
   readonly className?: string | undefined;
 }
@@ -25,18 +22,11 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
-  hint,
   busy = false,
   className,
 }: SegmentedControlProps<T>) {
-  const hintId = useId();
-
   return (
-    <fieldset
-      className={cx(styles.group, className)}
-      aria-describedby={hint === undefined ? undefined : hintId}
-      aria-disabled={busy || undefined}
-    >
+    <fieldset className={cx(styles.group, className)} aria-disabled={busy || undefined}>
       <legend className={styles.legend}>{legend}</legend>
       <div className={styles.segments}>
         {options.map((option) => (
@@ -57,7 +47,6 @@ export function SegmentedControl<T extends string>({
           </label>
         ))}
       </div>
-      {hint !== undefined && <FieldHint id={hintId}>{hint}</FieldHint>}
     </fieldset>
   );
 }

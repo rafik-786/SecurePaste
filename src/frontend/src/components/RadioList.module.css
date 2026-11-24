@@ -20,22 +20,12 @@
 }
 
 .row {
-  --radio-size: 20px;
-
-  display: grid;
-  grid-template-columns: 1fr;
-  align-content: center;
-  column-gap: var(--space-4);
-  min-block-size: var(--control-height-touch);
-  padding-block: var(--space-2);
-  cursor: pointer;
-}
-
-.choice {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  min-inline-size: 0;
+  min-block-size: var(--control-height-touch);
+  padding-block: var(--space-2);
+  cursor: pointer;
 }
 
 .label {
@@ -43,19 +33,15 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  min-inline-size: 0;
   font-size: var(--text-md);
   line-height: var(--leading-normal);
   color: var(--color-text);
 }
 
-.hint {
-  padding-inline-start: calc(var(--radio-size) + var(--space-3));
-  font-size: var(--text-sm);
-  line-height: var(--leading-normal);
-  color: var(--color-text-secondary);
-}
-
 .radio {
+  --radio-size: 20px;
+
   display: grid;
   flex-shrink: 0;
   place-content: center;
@@ -64,7 +50,7 @@
   margin: 0;
   border: var(--border-thick) solid var(--color-border-strong);
   border-radius: var(--radius-round);
-  background-color: var(--color-surface);
+  background-color: var(--glass-bg-strong);
   appearance: none;
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-standard);
@@ -97,17 +83,6 @@
 .group[aria-disabled='true'] .row,
 .group[aria-disabled='true'] .radio {
   cursor: progress;
-}
-
-@media (min-width: 64em) {
-  .row {
-    grid-template-columns: 14rem 1fr;
-    align-items: center;
-  }
-
-  .hint {
-    padding-inline-start: 0;
-  }
 }
 
 @media (forced-colors: active) {

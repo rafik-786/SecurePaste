@@ -1,15 +1,13 @@
-import {
-  AlertIcon,
-  CheckIcon,
-  FlameIcon,
-  OfflineIcon,
-  UnlinkIcon,
-} from '../../components/icons/icons';
+import { AlertIcon, FlameIcon, OfflineIcon, UnlinkIcon } from '../../components/icons/icons';
 import { StatusPage } from '../../components/StatusPage';
 import { CreatePasteLink } from '../shared/CreatePasteLink';
+import { PasteDeletedStatus } from '../shared/PasteDeletedStatus';
 import { RateLimitedStatus } from '../shared/RateLimitedStatus';
+import { DELETE_OUTCOME_UNKNOWN, GONE_REASONS } from '../shared/statusCopy';
 import { TryAgainButton } from '../shared/TryAgainButton';
 import type { DeleteStatusState } from './deleteState';
+
+const COPY_AGAIN = 'Nothing was deleted. Copy the full delete link again.';
 
 export interface DeleteStatusProps {
   readonly state: DeleteStatusState;
@@ -28,10 +26,7 @@ export function DeleteLinkProblemStatus({ problem }: DeleteLinkProblemStatusProp
       title="This delete link is not valid"
       actions={<CreatePasteLink />}
     >
-      <p>
-        The paste ID in this link is malformed, so there is nothing to delete. Check that the whole
-        link was copied.
-      </p>
+      <p>{COPY_AGAIN}</p>
     </StatusPage>
   ) : (
     <StatusPage
@@ -40,10 +35,7 @@ export function DeleteLinkProblemStatus({ problem }: DeleteLinkProblemStatusProp
       title="This delete link is incomplete"
       actions={<CreatePasteLink />}
     >
-      <p>
-        The part after the # is missing or damaged. That part is the delete token, so nothing can be
-        deleted without it. Copy the full delete link again from where you saved it.
-      </p>
+      <p>The part after the # is missing or damaged. {COPY_AGAIN}</p>
     </StatusPage>
   );
 }
@@ -53,30 +45,16 @@ export function DeleteStatus({ state, onRetry }: DeleteStatusProps) {
 
   switch (state.kind) {
     case 'deleted':
-      return (
-        <StatusPage
-          icon={CheckIcon}
-          tone="success"
-          title="Paste deleted"
-          actions={<CreatePasteLink variant="primary" />}
-        >
-          <p>
-            The encrypted content is destroyed. The share link now shows that the paste is gone.
-          </p>
-        </StatusPage>
-      );
+      return <PasteDeletedStatus action={<CreatePasteLink variant="primary" />} />;
     case 'wrong-token':
       return (
         <StatusPage
           icon={AlertIcon}
           tone="danger"
-          title="This delete link does not match"
+          title="This delete link doesn't match"
           actions={<CreatePasteLink />}
         >
-          <p>
-            The delete token in the link is wrong for this paste, so nothing was deleted. Use the
-            delete link shown when the paste was created.
-          </p>
+          <p>Nothing was deleted. Use the delete link from when you created the paste.</p>
         </StatusPage>
       );
     case 'not-found':
@@ -87,9 +65,7 @@ export function DeleteStatus({ state, onRetry }: DeleteStatusProps) {
           title="No paste at this link"
           actions={<CreatePasteLink />}
         >
-          <p>
-            Nothing to delete. The link may be mistyped, or the paste expired and was cleaned up.
-          </p>
+          <p>Nothing to delete.</p>
         </StatusPage>
       );
     case 'gone':
@@ -100,10 +76,7 @@ export function DeleteStatus({ state, onRetry }: DeleteStatusProps) {
           title="This paste is already gone"
           actions={<CreatePasteLink />}
         >
-          <p>
-            It expired, was opened for the last time, or was deleted. There is nothing left to
-            delete.
-          </p>
+          <p>{GONE_REASONS}</p>
         </StatusPage>
       );
     case 'rate-limited':
@@ -129,19 +102,12 @@ export function DeleteStatus({ state, onRetry }: DeleteStatusProps) {
       );
     case 'delete-failed':
       return state.cause === 'network' ? (
-        <StatusPage
-          icon={OfflineIcon}
-          tone="danger"
-          title="The connection dropped while deleting"
-          actions={retry}
-        >
-          <p>
-            The paste may or may not be deleted. Try again: if it was, you will see that it is gone.
-          </p>
+        <StatusPage icon={OfflineIcon} tone="danger" title="The connection dropped" actions={retry}>
+          <p>{DELETE_OUTCOME_UNKNOWN}</p>
         </StatusPage>
       ) : (
         <StatusPage icon={AlertIcon} tone="danger" title="The server hit an error" actions={retry}>
-          <p>The paste may not be deleted. Try again in a moment.</p>
+          <p>{DELETE_OUTCOME_UNKNOWN}</p>
         </StatusPage>
       );
   }

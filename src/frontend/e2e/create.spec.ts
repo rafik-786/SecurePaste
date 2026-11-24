@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import { expect, test } from './fixtures';
+import { applyTheme, expect, test, THEMES } from './fixtures';
 
 const PASTE_ID = 'x7k2mn4pq9rs';
 const DELETE_TOKEN = 'Xcmid5zrf-0Cn-W2Mh_yzNeCJTTY4bmz7jBr3lRgSnU';
@@ -154,18 +154,15 @@ test('Delete now sends the token from the delete link and confirms the deletion'
   const deleteLink = await page.getByRole('textbox', { name: 'Delete link' }).inputValue();
 
   await page.getByRole('button', { name: 'Delete now' }).click();
-  await expect(
-    page.getByText('Delete this paste now? The share link will show that it is gone.'),
-  ).toBeVisible();
+  await expect(page.getByText('Delete this paste? The link will stop working.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Delete paste' })).toBeFocused();
   expect(deletes).toEqual([]);
   await page.getByRole('button', { name: 'Delete paste' }).click();
 
-  const deleted = page.getByRole('group', { name: 'Paste deleted' });
-  await expect(deleted).toBeFocused();
-  await expect(deleted).toContainText(
-    'The encrypted content is destroyed. The share link now shows that the paste is gone.',
-  );
+  await expect(page.getByRole('heading', { level: 1, name: 'Paste deleted' })).toBeFocused();
+  await expect(page).toHaveTitle('Paste deleted - SecurePaste');
+  await expect(page.getByText('The link no longer works.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Link created' })).toHaveCount(0);
   expect(deletes).toEqual([{ method: 'DELETE', token: fragmentOf(deleteLink) }]);
   expect(fragmentOf(deleteLink)).toBe(DELETE_TOKEN);
   await expect(page.getByRole('textbox')).toHaveCount(0);
@@ -302,22 +299,42 @@ test('a phone-sized screen has no horizontal scroll and stacks the actions', asy
   expect(anotherBox?.width).toBe(deleteBox?.width);
 });
 
-test('the dark theme renders the form and the result with no console errors', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'dark' });
-  await mockCreate(page);
-  await page.goto('/');
+const THEME_COLORS = {
+  dark: {
+    page: 'rgb(11, 17, 32)',
+    textArea: 'rgba(14, 22, 38, 0.72)',
+    primary: 'rgb(249, 115, 22)',
+    sealed: 'rgb(251, 146, 60)',
+  },
+  light: {
+    page: 'rgb(248, 250, 252)',
+    textArea: 'rgba(255, 255, 255, 0.78)',
+    primary: 'rgb(194, 65, 12)',
+    sealed: 'rgb(194, 65, 12)',
+  },
+} as const;
 
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(19, 19, 17)');
-  await expect(page.getByRole('textbox', { name: 'Content' })).toHaveCSS(
-    'background-color',
-    'rgb(15, 15, 13)',
-  );
-  await expect(page.getByRole('button', { name: SUBMIT })).toHaveCSS(
-    'background-color',
-    'rgb(236, 233, 226)',
-  );
+for (const theme of THEMES) {
+  test(`the ${theme} theme renders the form and the result with no console errors`, async ({
+    page,
+  }) => {
+    const colors = THEME_COLORS[theme];
+    await applyTheme(page, theme);
+    await mockCreate(page);
+    await page.goto('/');
 
-  await createPaste(page);
+    await expect(page.locator('body')).toHaveCSS('background-color', colors.page);
+    await expect(page.getByRole('textbox', { name: 'Content' })).toHaveCSS(
+      'background-color',
+      colors.textArea,
+    );
+    await expect(page.getByRole('button', { name: SUBMIT })).toHaveCSS(
+      'background-color',
+      colors.primary,
+    );
 
-  await expect(page.getByText('Sealed', { exact: true })).toHaveCSS('color', 'rgb(142, 167, 255)');
-});
+    await createPaste(page);
+
+    await expect(page.getByText('Sealed', { exact: true })).toHaveCSS('color', colors.sealed);
+  });
+}

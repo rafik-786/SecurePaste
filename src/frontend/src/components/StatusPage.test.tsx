@@ -14,9 +14,9 @@ describe('StatusPage', () => {
         title="This paste is gone"
         actions={<Button variant="primary">Try again</Button>}
       >
-        <p>It expired, reached its view limit, or was deleted. SecurePaste does not say which.</p>
+        <p>It expired, was read, or was deleted.</p>
         <p>
-          If you have not opened this link before, tell the sender: someone else may have read it.
+          If you haven't opened this link before, tell the sender. Someone else may have read it.
         </p>
       </StatusPage>,
     );
@@ -24,7 +24,7 @@ describe('StatusPage', () => {
     const heading = screen.getByRole('heading', { level: 1, name: 'This paste is gone' });
     expect(heading).toHaveAttribute('tabindex', '-1');
     expect(document.title).toBe('This paste is gone - SecurePaste');
-    expect(screen.getByText(/SecurePaste does not say which/)).toBeInTheDocument();
+    expect(screen.getByText(/Someone else may have read it/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(heading.previousElementSibling).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getAllByRole('heading')).toHaveLength(1);

@@ -64,9 +64,11 @@ describe('highlightDecision', () => {
 describe('capNote', () => {
   it('words each cap and stays silent otherwise', () => {
     expect(capNote('over-size-cap')).toBe(SIZE_CAP_NOTE);
-    expect(SIZE_CAP_NOTE).toBe('Syntax highlighting is off for pastes over 128 KB.');
+    expect(SIZE_CAP_NOTE).toBe("Syntax highlighting is off for this paste: it's too long.");
     expect(capNote('over-line-cap')).toBe(LINE_CAP_NOTE);
-    expect(LINE_CAP_NOTE).toBe('Syntax highlighting is off for lines over 10,000 characters.');
+    expect(LINE_CAP_NOTE).toBe(
+      'Syntax highlighting is off for this paste: a line is over 10,000 characters.',
+    );
     expect(capNote('highlight')).toBeUndefined();
     expect(capNote('plain-text')).toBeUndefined();
   });

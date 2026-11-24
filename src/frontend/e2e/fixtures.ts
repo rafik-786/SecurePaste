@@ -1,6 +1,17 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type Page } from '@playwright/test';
 
 export const API_ROUTES = '**/api/v1/**';
+export const THEME_STORAGE_KEY = 'securepaste.theme';
+export const THEMES = ['dark', 'light'] as const;
+export type Theme = (typeof THEMES)[number];
+
+export async function applyTheme(page: Page, theme: Theme): Promise<void> {
+  if (theme === 'light') {
+    await page.addInitScript((key) => {
+      localStorage.setItem(key, 'light');
+    }, THEME_STORAGE_KEY);
+  }
+}
 
 const FAILED_RESOURCE = /^Failed to load resource: the server responded with a status of (\d{3})\b/;
 

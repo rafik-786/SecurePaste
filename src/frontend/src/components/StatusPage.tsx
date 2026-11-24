@@ -3,6 +3,7 @@ import { cx } from '../lib/classNames';
 import { ActionRow } from './ActionRow';
 import type { IconComponent } from './icons/types';
 import { PageHeading } from './PageHeading';
+import { Panel } from './Panel';
 import styles from './StatusPage.module.css';
 
 export type StatusTone = 'neutral' | 'warning' | 'danger' | 'success' | 'info';
@@ -25,11 +26,11 @@ export function StatusPage({
   className,
 }: StatusPageProps) {
   return (
-    <div className={cx(styles.status, className)}>
+    <Panel className={cx(styles.status, className)} bodyClassName={styles.content}>
       <Icon size={32} className={cx(styles.icon, styles[tone])} />
       <PageHeading className={styles.title}>{title}</PageHeading>
       {children !== undefined && <div className={styles.body}>{children}</div>}
       {actions !== undefined && <ActionRow className={styles.actions}>{actions}</ActionRow>}
-    </div>
+    </Panel>
   );
 }

@@ -16,10 +16,10 @@ const SEALS: Readonly<Record<SealState, { readonly icon: IconComponent; readonly
 
 export interface SealStripProps {
   readonly state: SealState;
-  readonly items: readonly ReactNode[];
+  readonly items?: readonly ReactNode[];
 }
 
-export function SealStrip({ state, items }: SealStripProps) {
+export function SealStrip({ state, items = [] }: SealStripProps) {
   const { icon: Icon, word } = SEALS[state];
 
   return (

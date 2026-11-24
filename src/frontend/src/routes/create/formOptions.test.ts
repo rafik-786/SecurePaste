@@ -9,6 +9,7 @@ import {
   maxViewsFor,
   VIEW_COUNT_ERROR,
   viewCountError,
+  viewCountUnit,
 } from './formOptions';
 
 describe('create form options', () => {
@@ -58,13 +59,23 @@ describe('create form options', () => {
     expect(viewCountError(options)).toBe(maxViews === undefined ? VIEW_COUNT_ERROR : undefined);
   });
 
+  it.each([
+    { viewCount: '1', unit: 'view' },
+    { viewCount: ' 01 ', unit: 'view' },
+    { viewCount: '0', unit: 'views' },
+    { viewCount: '5', unit: 'views' },
+    { viewCount: '', unit: 'views' },
+  ])('reads "Limit to $viewCount $unit"', ({ viewCount, unit }) => {
+    expect(viewCountUnit(viewCount)).toBe(unit);
+  });
+
   it('words the view count error with the real range', () => {
     expect(VIEW_COUNT_ERROR).toBe('Enter a whole number from 1 to 100.');
   });
 
   it('treats whitespace-only content as empty', () => {
     expect(contentError('', 0)).toBe(EMPTY_CONTENT_ERROR);
-    expect(contentError(' \n\t ', 70)).toBe('Paste some text first.');
+    expect(contentError(' \n\t ', 70)).toBe('Add some text first.');
     expect(contentError(' x ', 70)).toBeUndefined();
   });
 

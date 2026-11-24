@@ -37,22 +37,23 @@ afterEach(() => {
 });
 
 describe('app shell', () => {
-  it('has one banner, one main navigation, one main and one content info', async () => {
-    renderApp('/about');
+  it('has one banner and one main, no navigation landmark, and a footer only with a source link', async () => {
+    renderApp('/nowhere');
     await screen.findByRole('heading', { level: 1 });
 
     expect(screen.getAllByRole('banner')).toHaveLength(1);
-    expect(screen.getAllByRole('navigation')).toHaveLength(1);
-    expect(screen.getByRole('navigation', { name: 'Main' })).toBeInTheDocument();
+    expect(screen.queryAllByRole('navigation')).toHaveLength(0);
     const main = screen.getByRole('main');
     expect(main).toHaveAttribute('id', 'main');
     expect(main).toHaveAttribute('tabindex', '-1');
-    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+    expect(screen.queryAllByRole('contentinfo')).toHaveLength(
+      import.meta.env.VITE_SOURCE_URL === undefined ? 0 : 1,
+    );
   });
 
   it('puts the skip link first in the tab order and the live region last', async () => {
     const user = userEvent.setup();
-    const { container } = renderApp('/about');
+    const { container } = renderApp('/nowhere');
     await screen.findByRole('heading', { level: 1 });
 
     await user.tab();
@@ -81,7 +82,7 @@ describe('routes', () => {
     { path: '/', heading: 'New paste' },
     { path: `/p/${ID}#${KEY}`, heading: 'Encrypted paste' },
     { path: `/d/${ID}#${DELETE_TOKEN}`, heading: 'Delete paste' },
-    { path: '/about', heading: 'How SecurePaste works' },
+    { path: '/about', heading: 'Page not found' },
     { path: '/pastes/x7k2mn4pq9rs', heading: 'Page not found' },
   ])('renders $path as "$heading" and titles the document after it', async ({ path, heading }) => {
     renderApp(path);
@@ -103,14 +104,12 @@ describe('routes', () => {
 
   it('focuses the new page heading after in-app navigation', async () => {
     const user = userEvent.setup();
-    renderApp('/');
-    await screen.findByRole('heading', { level: 1, name: 'New paste' });
+    renderApp('/nowhere');
+    await screen.findByRole('heading', { level: 1, name: 'Page not found' });
 
-    await user.click(screen.getByRole('link', { name: 'About' }));
+    await user.click(screen.getByRole('link', { name: 'Create a paste' }));
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'How SecurePaste works' }),
-    ).toHaveFocus();
+    expect(await screen.findByRole('heading', { level: 1, name: 'New paste' })).toHaveFocus();
   });
 
   it('shows nothing while a route loads quickly, then a status after 300 ms', () => {

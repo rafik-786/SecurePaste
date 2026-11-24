@@ -2,9 +2,12 @@ import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { FINE_POINTER, setMediaQuery } from '../test/media';
 import { liveRegion, renderWithProviders } from '../test/render';
 import { COPY_FEEDBACK_MS, CopyBlockedHint, CopyButton, type CopyOutcome } from './CopyButton';
 
+const BLOCKED_MOUSE = 'Copying was blocked. Press Ctrl+C.';
+const BLOCKED_TOUCH = 'Copying was blocked. Touch and hold the text, then tap Copy.';
 const SHARE_LINK =
   'https://securepaste.app/p/x7k2mn4pq9rs#xCCvY4XmaJj_jCT8M5S78fgy1X4fvzuxtYPqsh_N4Jw';
 
@@ -82,7 +85,8 @@ describe('CopyButton', () => {
     expect(screen.getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
   });
 
-  it('selects the related field and explains the shortcut when the browser blocks copying', async () => {
+  it('selects the related field and names the shortcut on a mouse device when copying is blocked', async () => {
+    setMediaQuery(FINE_POINTER, true);
     const user = userEvent.setup();
     const onOutcome = vi.fn();
     renderWithProviders(<LinkField onOutcome={onOutcome} />);
@@ -98,12 +102,39 @@ describe('CopyButton', () => {
     expect(field.selectionStart).toBe(0);
     expect(field.selectionEnd).toBe(SHARE_LINK.length);
     expect(onOutcome).toHaveBeenCalledWith('failed');
-    expect(
-      screen.getByText('Copying was blocked by the browser. The text is selected: press Ctrl+C.'),
-    ).toBeInTheDocument();
-    expect(await screen.findByText('Copying was blocked. Select the text and press Ctrl+C.')).toBe(
-      liveRegion(),
+    expect(screen.getByText(BLOCKED_MOUSE, { selector: 'p' })).toBeInTheDocument();
+    expect(await screen.findByText(BLOCKED_MOUSE, { selector: 'div' })).toBe(liveRegion());
+  });
+
+  it('tells a touch screen to touch and hold, with no keyboard shortcut', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LinkField />);
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(
+      new DOMException('denied', 'NotAllowedError'),
     );
+
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+
+    expect(screen.getByText(BLOCKED_TOUCH, { selector: 'p' })).toBeInTheDocument();
+    expect(await screen.findByText(BLOCKED_TOUCH, { selector: 'div' })).toBe(liveRegion());
+  });
+
+  it('can carry a longer name than its short label while idle, and drops it to say Copied', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <CopyButton
+        text={SHARE_LINK}
+        label="Copy"
+        idleName="Copy delete link"
+        copiedAnnouncement="Delete link copied to clipboard."
+      />,
+    );
+    const button = screen.getByRole('button', { name: 'Copy delete link' });
+    expect(button.querySelector('span > span:not([aria-hidden])')?.textContent).toBe('Copy');
+
+    await user.click(button);
+
+    expect(screen.getByRole('button', { name: 'Copied' })).toHaveFocus();
   });
 
   it('treats a missing clipboard API as blocked', async () => {

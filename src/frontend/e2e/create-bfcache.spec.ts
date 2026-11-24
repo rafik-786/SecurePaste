@@ -57,10 +57,8 @@ test('Back after leaving the result restores an empty form, never the links', as
   );
   await page.evaluate((marker) => Reflect.set(window, marker, true), PAGE_MARKER);
 
-  await page.goto('/about');
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'How SecurePaste works' }),
-  ).toBeVisible();
+  await page.goto('/nowhere');
+  await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
   // A page restored from the cache fires pageshow, never load.
   await page.goBack({ waitUntil: 'commit' });
 

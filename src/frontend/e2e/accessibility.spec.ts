@@ -1,6 +1,6 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
-import { expect, test, type PageGuard } from './fixtures';
+import { applyTheme, expect, test, THEMES } from './fixtures';
 import {
   BASH_CONTENT,
   CLAIM_PATH,
@@ -12,83 +12,25 @@ import {
   problem,
   sealPaste,
   tamper,
-  type Reply,
 } from './read-support';
+import {
+  DELETE_TOKEN,
+  RETRY_LATER,
+  CREATE_PATH,
+  SUBMIT,
+  expectNetworkFailure,
+  heading,
+  openPaste,
+  openResult,
+  readerWith,
+  submitPaste,
+  type Screen as BaseScreen,
+} from './screens';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-const CREATE_PATH = '/api/v1/pastes';
-const DELETE_TOKEN = 'Xcmid5zrf-0Cn-W2Mh_yzNeCJTTY4bmz7jBr3lRgSnU';
-const SUBMIT = 'Encrypt and create link';
-const NETWORK_FAILURE = 'Failed to load resource: net::ERR_FAILED';
-const RETRY_LATER = { 'Retry-After': '60' };
 
-interface Screen {
-  readonly name: string;
-  readonly open: (page: Page, guard: PageGuard) => Promise<void>;
+interface Screen extends BaseScreen {
   readonly hover?: (page: Page) => Locator;
-}
-
-function heading(page: Page, name: string) {
-  return page.getByRole('heading', { level: 1, name });
-}
-
-async function expectNetworkFailure(guard: PageGuard): Promise<void> {
-  await expect
-    .poll(() => guard.problems.some((problem) => problem.startsWith(NETWORK_FAILURE)))
-    .toBe(true);
-  guard.problems.splice(
-    guard.problems.findIndex((problem) => problem.startsWith(NETWORK_FAILURE)),
-    1,
-  );
-}
-
-function created(): Reply {
-  return {
-    status: 201,
-    body: {
-      id: PASTE_ID,
-      deleteToken: DELETE_TOKEN,
-      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
-    },
-  };
-}
-
-async function submitPaste(page: Page): Promise<void> {
-  await page.goto('/');
-  await page.getByRole('textbox', { name: 'Content' }).fill(BASH_CONTENT);
-  await page.getByRole('button', { name: SUBMIT }).click();
-}
-
-async function openResult(page: Page, deleteReply?: Reply): Promise<void> {
-  await mockApi(page, {
-    [`POST ${CREATE_PATH}`]: [created()],
-    ...(deleteReply === undefined ? {} : { [`DELETE ${PASTE_PATH}`]: [deleteReply] }),
-  });
-  await submitPaste(page);
-  await expect(heading(page, 'Link created')).toBeVisible();
-}
-
-async function openPaste(page: Page, handlers: Parameters<typeof mockApi>[1]): Promise<string> {
-  const paste = await sealPaste(BASH_CONTENT, 'bash');
-  await mockApi(page, handlers);
-  await page.goto(`/p/${PASTE_ID}#${paste.key}`);
-  return paste.key;
-}
-
-async function readerWith(
-  page: Page,
-  remainingViews: number,
-  claimed: (ciphertext: string) => Reply,
-): Promise<void> {
-  const paste = await sealPaste(BASH_CONTENT, 'bash');
-  await mockApi(page, {
-    [`GET ${PASTE_PATH}`]: [peek(remainingViews, paste.sizeBytes)],
-    [`POST ${CLAIM_PATH}`]: [claimed(paste.ciphertext)],
-  });
-  await page.goto(`/p/${PASTE_ID}#${paste.key}`);
-  await page
-    .getByRole('button', { name: remainingViews === 1 ? 'Reveal and destroy' : 'Reveal paste' })
-    .click();
 }
 
 const SCREENS: readonly Screen[] = [
@@ -107,7 +49,7 @@ const SCREENS: readonly Screen[] = [
       await count.click();
       await count.fill('0');
       await page.keyboard.press('Control+Enter');
-      await expect(page.getByText('Paste some text first.')).toBeVisible();
+      await expect(page.getByText('Add some text first.')).toBeVisible();
       await expect(page.getByText('Enter a whole number from 1 to 100.')).toBeVisible();
     },
   },
@@ -152,7 +94,7 @@ const SCREENS: readonly Screen[] = [
       await openResult(page, { status: 204 });
       await page.getByRole('button', { name: 'Delete now' }).click();
       await page.getByRole('button', { name: 'Delete paste' }).click();
-      await expect(page.getByRole('group', { name: 'Paste deleted' })).toBeFocused();
+      await expect(page.getByRole('heading', { level: 1, name: 'Paste deleted' })).toBeFocused();
     },
   },
   {
@@ -206,7 +148,7 @@ const SCREENS: readonly Screen[] = [
         Object.defineProperty(window, 'isSecureContext', { get: () => false });
       });
       await page.goto(`/p/${PASTE_ID}#${DELETE_TOKEN}`);
-      await expect(heading(page, 'This browser cannot encrypt here')).toBeVisible();
+      await expect(heading(page, "Encryption isn't available here")).toBeVisible();
     },
   },
   {
@@ -243,7 +185,7 @@ const SCREENS: readonly Screen[] = [
     name: 'read status, corrupted',
     open: async (page) => {
       await readerWith(page, 5, (ciphertext) => claim(tamper(ciphertext), 4));
-      await expect(heading(page, 'Corrupted data or wrong key')).toBeVisible();
+      await expect(heading(page, 'This paste could not be decrypted')).toBeVisible();
     },
   },
   {
@@ -277,7 +219,7 @@ const SCREENS: readonly Screen[] = [
       await mockApi(page, { [`GET ${PASTE_PATH}`]: [peek(1, paste.sizeBytes)] });
       await page.goto(`/p/${PASTE_ID}#${paste.key}`);
       await page.getByRole('button', { name: 'Reveal and destroy' }).click();
-      await expect(heading(page, 'The connection dropped while revealing')).toBeVisible();
+      await expect(heading(page, 'The connection dropped')).toBeVisible();
       await expectNetworkFailure(guard);
     },
   },
@@ -318,15 +260,8 @@ const SCREENS: readonly Screen[] = [
       });
       await page.goto(`/d/${PASTE_ID}#${DELETE_TOKEN}`);
       await page.getByRole('button', { name: 'Delete paste' }).click();
-      await expect(heading(page, 'This delete link does not match')).toBeFocused();
+      await expect(heading(page, "This delete link doesn't match")).toBeFocused();
       await guard.expectHttpError(403);
-    },
-  },
-  {
-    name: 'about',
-    open: async (page) => {
-      await page.goto('/about');
-      await expect(heading(page, 'How SecurePaste works')).toBeVisible();
     },
   },
   {
@@ -375,22 +310,23 @@ const SCREENS: readonly Screen[] = [
     hover: (page) => page.getByRole('button', { name: 'Delete paste' }),
   },
   {
-    name: 'about, header link hovered',
+    name: 'page not found, theme toggle hovered',
     open: async (page) => {
-      await page.goto('/about');
-      await expect(heading(page, 'How SecurePaste works')).toBeVisible();
+      await page.goto('/nowhere');
+      await expect(heading(page, 'Page not found')).toBeVisible();
     },
-    hover: (page) => page.getByRole('link', { name: 'About' }),
+    hover: (page) => page.getByRole('button', { name: /^Switch to (light|dark) theme$/ }),
   },
 ];
 
-for (const theme of ['light', 'dark'] as const) {
+for (const theme of THEMES) {
   for (const screen of SCREENS) {
     test(`axe finds no WCAG 2.2 AA violations: ${screen.name}, ${theme} theme`, async ({
       page,
       guard,
     }) => {
-      await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await applyTheme(page, theme);
       await screen.open(page, guard);
       if (screen.hover) {
         await screen.hover(page).hover();
@@ -413,24 +349,25 @@ for (const theme of ['light', 'dark'] as const) {
 
 const HOVER_COLORS = {
   light: {
-    primary: { text: 'rgb(255, 255, 255)', fill: 'rgb(58, 56, 50)' },
-    secondary: { text: 'rgb(27, 26, 23)', fill: 'rgb(241, 238, 231)' },
-    link: { rest: 'rgb(35, 70, 184)', hover: 'rgb(27, 56, 148)' },
+    primary: { text: 'rgb(255, 255, 255)', fill: 'rgb(154, 52, 18)' },
+    secondary: { text: 'rgb(15, 23, 42)', fill: 'rgba(241, 245, 249, 0.9)' },
+    link: { rest: 'rgb(194, 65, 12)', hover: 'rgb(154, 52, 18)' },
   },
   dark: {
-    primary: { text: 'rgb(19, 19, 17)', fill: 'rgb(255, 255, 255)' },
-    secondary: { text: 'rgb(236, 233, 226)', fill: 'rgb(37, 36, 31)' },
-    link: { rest: 'rgb(142, 167, 255)', hover: 'rgb(177, 195, 255)' },
+    primary: { text: 'rgb(11, 17, 32)', fill: 'rgb(251, 146, 60)' },
+    secondary: { text: 'rgb(241, 245, 249)', fill: 'rgba(26, 37, 57, 0.82)' },
+    link: { rest: 'rgb(251, 146, 60)', hover: 'rgb(253, 186, 116)' },
   },
 } as const;
 
-for (const theme of ['light', 'dark'] as const) {
+for (const theme of THEMES) {
   test(`link buttons change only their fill on hover, and text links still change color, ${theme} theme`, async ({
     page,
     guard,
   }) => {
     const colors = HOVER_COLORS[theme];
-    await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await applyTheme(page, theme);
 
     await page.goto('/nowhere');
     const primary = page.getByRole('link', { name: 'Create a paste' });
@@ -441,12 +378,12 @@ for (const theme of ['light', 'dark'] as const) {
     await page.evaluate(() => {
       const paragraph = document.createElement('p');
       const link = document.createElement('a');
-      link.href = '/about';
-      link.textContent = 'How it works';
+      link.href = '/nowhere';
+      link.textContent = 'A text link';
       paragraph.append(link);
       document.querySelector('main')?.append(paragraph);
     });
-    const textLink = page.getByRole('link', { name: 'How it works' });
+    const textLink = page.getByRole('link', { name: 'A text link' });
     await page.mouse.move(0, 0);
     await expect(textLink).toHaveCSS('color', colors.link.rest);
     await textLink.hover();

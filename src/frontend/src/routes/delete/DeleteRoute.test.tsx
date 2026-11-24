@@ -14,8 +14,8 @@ import { DeleteRoute } from './DeleteRoute';
 const ID = 'x7k2mn4pq9rs';
 const PASTE = `/api/v1/pastes/${ID}`;
 const TOKEN = 'Xcmid5zrf-0Cn-W2Mh_yzNeCJTTY4bmz7jBr3lRgSnU';
-const BODY =
-  'Deleting destroys the encrypted content on the server now. Anyone who opens the share link afterwards will see that the paste is gone. This cannot be undone.';
+const BODY = "The link will stop working. You can't undo this.";
+const DELETE_UNKNOWN = 'The paste may or may not be deleted. Try again to check.';
 
 let api: FakeApi;
 
@@ -59,9 +59,7 @@ describe('delete route, local checks', () => {
         screen.getByRole('heading', { level: 1, name: 'This delete link is not valid' }),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'The paste ID in this link is malformed, so there is nothing to delete. Check that the whole link was copied.',
-        ),
+        screen.getByText('Nothing was deleted. Copy the full delete link again.'),
       ).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Create a paste' })).toHaveAttribute('href', '/');
       expect(api.calls).toEqual([]);
@@ -82,7 +80,7 @@ describe('delete route, local checks', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'The part after the # is missing or damaged. That part is the delete token, so nothing can be deleted without it. Copy the full delete link again from where you saved it.',
+        'The part after the # is missing or damaged. Nothing was deleted. Copy the full delete link again.',
       ),
     ).toBeInTheDocument();
     expect(api.calls).toEqual([]);
@@ -219,11 +217,7 @@ describe('delete route, deleting', () => {
     await confirmDeletion(user);
 
     await expectFocus(await screen.findByRole('heading', { level: 1, name: 'Paste deleted' }));
-    expect(
-      screen.getByText(
-        'The encrypted content is destroyed. The share link now shows that the paste is gone.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('The link no longer works.')).toBeInTheDocument();
     const create = screen.getByRole('link', { name: 'Create a paste' });
     expect(create).toHaveAttribute('href', '/');
     expect(create.className).toMatch(/primary/);
@@ -233,18 +227,18 @@ describe('delete route, deleting', () => {
   it.each([
     {
       reply: problemReply(403),
-      title: 'This delete link does not match',
-      body: 'The delete token in the link is wrong for this paste, so nothing was deleted. Use the delete link shown when the paste was created.',
+      title: "This delete link doesn't match",
+      body: 'Nothing was deleted. Use the delete link from when you created the paste.',
     },
     {
       reply: problemReply(404),
       title: 'No paste at this link',
-      body: 'Nothing to delete. The link may be mistyped, or the paste expired and was cleaned up.',
+      body: 'Nothing to delete.',
     },
     {
       reply: problemReply(410),
       title: 'This paste is already gone',
-      body: 'It expired, was opened for the last time, or was deleted. There is nothing left to delete.',
+      body: 'It expired, was read, or was deleted.',
     },
   ])('maps the DELETE answer to "$title"', async ({ reply, title, body }) => {
     const user = userEvent.setup();
@@ -303,13 +297,13 @@ describe('delete route, failures and Try again', () => {
   it.each([
     {
       reply: 'network-error' as const,
-      title: 'The connection dropped while deleting',
-      body: 'The paste may or may not be deleted. Try again: if it was, you will see that it is gone.',
+      title: 'The connection dropped',
+      body: DELETE_UNKNOWN,
     },
     {
       reply: problemReply(500),
       title: 'The server hit an error',
-      body: 'The paste may not be deleted. Try again in a moment.',
+      body: DELETE_UNKNOWN,
     },
   ])('a failed DELETE reads "$title" and Try again re-peeks, never re-deletes', async (row) => {
     const user = userEvent.setup();

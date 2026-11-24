@@ -1,19 +1,27 @@
 import type { Page } from '@playwright/test';
+import { SOURCE_URL } from './buildEnv';
 import { expect, test } from './fixtures';
 import { CLAIM_PATH, PASTE_ID, PASTE_PATH, claim, mockApi, peek, sealPaste } from './read-support';
 
 const KEY = 'xCCvY4XmaJj_jCT8M5S78fgy1X4fvzuxtYPqsh_N4Jw';
+const APP_LAYOUT = { width: 1280, height: 720 };
+const STACKED_DESKTOP = { width: 1280, height: 700 };
+const STACKED_LAYOUTS = [STACKED_DESKTOP, { width: 375, height: 812 }];
 
-test('renders the shell landmarks on every page', async ({ page }) => {
-  for (const path of ['/', '/about', '/nowhere']) {
+test('renders the shell landmarks on every page, with no navigation landmark and only a source link in the footer', async ({
+  page,
+}) => {
+  for (const path of ['/', '/nowhere']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.getByRole('banner')).toHaveCount(1);
-    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible();
+    await expect(page.getByRole('navigation')).toHaveCount(0);
     await expect(page.getByRole('main')).toHaveCount(1);
-    await expect(page.getByRole('contentinfo')).toContainText(
-      'Encrypted in your browser. The server only stores ciphertext.',
-    );
+    const footer = page.getByRole('contentinfo');
+    await expect(footer).toHaveText('Source code (opens in a new tab)');
+    await expect(
+      footer.getByRole('link', { name: 'Source code (opens in a new tab)' }),
+    ).toHaveAttribute('href', SOURCE_URL);
   }
 });
 
@@ -36,36 +44,10 @@ test('the skip link appears on first Tab and moves focus to main, keeping the fr
   expect(new URL(page.url()).hash).toBe(`#${KEY}`);
 });
 
-test('About renders its final copy, with a table on wide screens', async ({ page }) => {
-  await page.goto('/about');
-
-  await expect(page).toHaveTitle('How SecurePaste works - SecurePaste');
-  await expect(page.getByRole('heading', { level: 2 })).toHaveText([
-    'When you create a paste',
-    'When someone opens the link',
-    'What the server stores',
-    'Limits',
-    'What this does not protect against',
-    'Privacy',
-  ]);
-  await expect(page.getByRole('table')).toBeVisible();
-  await expect(page.getByRole('list', { name: 'Stored', exact: true })).toBeHidden();
-  await expect(page.getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
-});
-
-test('About stacks the stored table into two lists on a phone', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/about');
-
-  await expect(page.getByRole('table')).toBeHidden();
-  await expect(page.getByRole('list', { name: 'Stored', exact: true })).toBeVisible();
-  await expect(page.getByRole('list', { name: 'Never stored' })).toBeVisible();
-});
-
 test('holds 320px without horizontal page scrolling', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
 
-  for (const path of ['/', '/about', '/nowhere']) {
+  for (const path of ['/', '/nowhere']) {
     await page.goto(path);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -86,16 +68,38 @@ test('an unknown address shows Page not found, which leads back to the create pa
   await expect(page.getByRole('heading', { level: 1, name: 'New paste' })).toBeFocused();
 });
 
-test('starts the footer below the first screen, even on a short page', async ({ page }) => {
+test('the old About address shows Page not found', async ({ page }) => {
+  await page.goto('/about');
+
+  await expect(page).toHaveTitle('Page not found - SecurePaste');
+  await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+});
+
+for (const viewport of STACKED_LAYOUTS) {
+  test(`in the stacked layout at ${viewport.width}x${viewport.height} the footer starts below the first screen, even on a short page`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/nowhere');
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+
+    const footer = await page.getByRole('contentinfo').boundingBox();
+
+    expect(footer).not.toBeNull();
+    expect(footer?.y ?? 0).toBeGreaterThanOrEqual(viewport.height);
+  });
+}
+
+test('in app mode the footer is a slim bar at the bottom of the screen', async ({ page }) => {
+  await page.setViewportSize(APP_LAYOUT);
   await page.goto('/nowhere');
   await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
 
-  const viewport = page.viewportSize();
   const footer = await page.getByRole('contentinfo').boundingBox();
 
-  expect(viewport).not.toBeNull();
   expect(footer).not.toBeNull();
-  expect(footer?.y ?? 0).toBeGreaterThanOrEqual(viewport?.height ?? Infinity);
+  expect(Math.round((footer?.y ?? 0) + (footer?.height ?? 0))).toBe(APP_LAYOUT.height);
+  expect(footer?.height ?? Infinity).toBeLessThanOrEqual(40);
 });
 
 async function recordLayoutShifts(page: Page): Promise<void> {
@@ -125,34 +129,41 @@ async function layoutShifts(page: Page): Promise<unknown> {
   return page.evaluate((): unknown => Reflect.get(window, 'layoutShifts'));
 }
 
-test('the first load of / shifts nothing when the route replaces its fallback', async ({
-  page,
-}) => {
-  await recordLayoutShifts(page);
+for (const [layout, viewport] of [
+  ['app mode', APP_LAYOUT],
+  ['the stacked layout', STACKED_DESKTOP],
+] as const) {
+  test(`in ${layout}, the first load of / shifts nothing when the route replaces its fallback`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await recordLayoutShifts(page);
 
-  await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1, name: 'New paste' })).toBeVisible();
-  await page.waitForLoadState('networkidle');
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1, name: 'New paste' })).toBeVisible();
+    await page.waitForLoadState('networkidle');
 
-  expect(await layoutShifts(page)).toEqual([]);
-});
-
-test('an unlimited 120-line paste replaces the skeleton without shifting anything', async ({
-  page,
-}) => {
-  await recordLayoutShifts(page);
-  const content = Array.from({ length: 120 }, (_, index) => `echo line ${index + 1}`).join('\n');
-  const paste = await sealPaste(content, 'bash');
-  await mockApi(page, {
-    [`GET ${PASTE_PATH}`]: [peek(null, paste.sizeBytes)],
-    [`POST ${CLAIM_PATH}`]: [claim(paste.ciphertext, null)],
+    expect(await layoutShifts(page)).toEqual([]);
   });
 
-  await page.goto(`/p/${PASTE_ID}#${paste.key}`);
-  const code = page.getByRole('region', { name: 'Paste content, Bash, 120 lines' });
-  await expect(code).toBeFocused();
-  await expect(code.locator('.hljs-built_in').first()).toHaveText('echo');
-  await page.waitForLoadState('networkidle');
+  test(`in ${layout}, an unlimited 120-line paste replaces the skeleton without shifting anything`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await recordLayoutShifts(page);
+    const content = Array.from({ length: 120 }, (_, index) => `echo line ${index + 1}`).join('\n');
+    const paste = await sealPaste(content, 'bash');
+    await mockApi(page, {
+      [`GET ${PASTE_PATH}`]: [peek(null, paste.sizeBytes)],
+      [`POST ${CLAIM_PATH}`]: [claim(paste.ciphertext, null)],
+    });
 
-  expect(await layoutShifts(page)).toEqual([]);
-});
+    await page.goto(`/p/${PASTE_ID}#${paste.key}`);
+    const code = page.getByRole('region', { name: 'Paste content, Bash, 120 lines' });
+    await expect(code).toBeFocused();
+    await expect(code.locator('.hljs-built_in').first()).toHaveText('echo');
+    await page.waitForLoadState('networkidle');
+
+    expect(await layoutShifts(page)).toEqual([]);
+  });
+}

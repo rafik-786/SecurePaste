@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatAbsolute } from '../../lib/time';
 import { expectFocus } from '../../test/focus';
+import { FINE_POINTER, setMediaQuery } from '../../test/media';
 import { liveRegion, renderWithProviders } from '../../test/render';
 import { CreateResult } from './CreateResult';
 import {
@@ -22,11 +23,11 @@ import type { CreatedPaste } from './links';
 const KEY = 'xCCvY4XmaJj_jCT8M5S78fgy1X4fvzuxtYPqsh_N4Jw';
 const SHARE_LINK = `${ORIGIN}/p/${PASTE_ID}#${KEY}`;
 const DELETE_LINK = `${ORIGIN}/d/${PASTE_ID}#${DELETE_TOKEN}`;
-const SHARE_WARNING =
-  'Anyone with this link can read the paste. The part after the # is the key, so send the whole link over a channel you trust.';
-const DELETE_HINT =
-  'Opens a page where you can delete the paste early. This is the only time it is shown: reloading or leaving this page clears it.';
-const QUESTION = 'Delete this paste now? The share link will show that it is gone.';
+const SHARE_HELP_ONCE = "Anyone with this link can read it once. Don't test it yourself.";
+const DELETE_HELP = 'Shown once. Keep it to delete the paste before it expires.';
+const QUESTION = 'Delete this paste? The link will stop working.';
+const DELETE_UNKNOWN = 'The paste may or may not be deleted. Try again to check.';
+const BLOCKED_MOUSE = 'Copying was blocked. Press Ctrl+C.';
 
 function pasteExpiringIn(ms: number, maxViews: number | null = 1): CreatedPaste {
   return {
@@ -41,8 +42,11 @@ function pasteExpiringIn(ms: number, maxViews: number | null = 1): CreatedPaste 
 
 function renderResult(paste = pasteExpiringIn(DAY_MS)) {
   const onCreateAnother = vi.fn();
-  renderWithProviders(<CreateResult paste={paste} onCreateAnother={onCreateAnother} />);
-  return { paste, onCreateAnother };
+  const onDeleted = vi.fn();
+  renderWithProviders(
+    <CreateResult paste={paste} onCreateAnother={onCreateAnother} onDeleted={onDeleted} />,
+  );
+  return { paste, onCreateAnother, onDeleted };
 }
 
 function field(name: 'Share link' | 'Delete link') {
@@ -80,21 +84,20 @@ describe('create result', () => {
     ]);
     expect(field('Share link')).toHaveValue(SHARE_LINK);
     expect(field('Delete link')).toHaveValue(DELETE_LINK);
-    expect(field('Share link')).toHaveAccessibleDescription(
-      `${SHARE_WARNING} It works once: opening it yourself uses the only view.`,
-    );
-    expect(field('Delete link')).toHaveAccessibleDescription(DELETE_HINT);
+    expect(field('Share link')).toHaveAccessibleDescription(SHARE_HELP_ONCE);
+    expect(field('Delete link')).toHaveAccessibleDescription(DELETE_HELP);
 
     const copy = screen.getByRole('button', { name: 'Copy link' });
     expect(copy).toHaveFocus();
-    expect(copy).toHaveAccessibleDescription(
-      `${SHARE_WARNING} It works once: opening it yourself uses the only view.`,
-    );
-    expect(screen.getByRole('button', { name: 'Copy delete link' })).toBeInTheDocument();
+    expect(copy).toHaveAccessibleDescription(SHARE_HELP_ONCE);
+    const copyDelete = screen.getByRole('button', { name: 'Copy delete link' });
+    expect(copyDelete.querySelector('span > span:not([aria-hidden])')?.textContent).toBe('Copy');
+    expect(copyDelete).toHaveAccessibleDescription(DELETE_HELP);
 
     const time = screen.getByText(absolute);
     expect(time.tagName).toBe('TIME');
-    expect(time.parentElement).toHaveTextContent(`Expires at ${absolute}, your local time.`);
+    expect(time).toHaveAttribute('datetime', paste.expiresAt.toISOString());
+    expect(time.parentElement?.textContent).toBe(`Expires ${absolute}`);
     expect(screen.getByRole('button', { name: 'Delete now' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create another' })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
@@ -119,23 +122,31 @@ describe('create result', () => {
     },
   );
 
+  it('writes the expiry day first with a lowercase am or pm, as in 25 Nov 2026, 2:16 am', () => {
+    const { paste } = renderResult();
+
+    const line = screen.getByText(
+      (_, element) => element?.tagName === 'P' && /^Expires \d/.test(element.textContent),
+    );
+    expect(line.textContent).toMatch(
+      /^Expires \d{1,2} [A-Z][a-z]{2} \d{4}, \d{1,2}:\d{2}\s(am|pm)$/,
+    );
+    expect(line.textContent).toBe(`Expires ${formatAbsolute(paste.expiresAt)}`);
+  });
+
   it.each([
-    {
-      maxViews: 1,
-      item: 'Burn after reading',
-      sentence: 'It works once: opening it yourself uses the only view.',
-    },
-    { maxViews: 5, item: '5 views', sentence: 'It can be opened 5 times, including by you.' },
+    { maxViews: 1, item: 'Burn after reading', help: SHARE_HELP_ONCE },
+    { maxViews: 5, item: '5 views', help: 'Anyone with this link can read it 5 times.' },
     {
       maxViews: null,
       item: 'Unlimited views',
-      sentence: 'It can be opened any number of times until it expires.',
+      help: 'Anyone with this link can read it until it expires.',
     },
-  ])('summarises maxViews $maxViews as "$item"', ({ maxViews, item, sentence }) => {
+  ])('summarises maxViews $maxViews as "$item"', ({ maxViews, item, help }) => {
     renderResult(pasteExpiringIn(DAY_MS, maxViews));
 
     expect(screen.getByText(item)).toBeInTheDocument();
-    expect(field('Share link')).toHaveAccessibleDescription(`${SHARE_WARNING} ${sentence}`);
+    expect(field('Share link')).toHaveAccessibleDescription(help);
   });
 
   it('selects the whole link when the field is clicked or tabbed to', async () => {
@@ -168,6 +179,7 @@ describe('create result', () => {
   });
 
   it('selects the link and explains the shortcut when the browser blocks copying', async () => {
+    setMediaQuery(FINE_POINTER, true);
     const user = userEvent.setup();
     renderResult();
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(
@@ -181,15 +193,10 @@ describe('create result', () => {
     expect(share).toHaveFocus();
     expect(share.selectionStart).toBe(0);
     expect(share.selectionEnd).toBe(SHARE_LINK.length);
-    const hint = 'Copying was blocked by the browser. The text is selected: press Ctrl+C.';
-    expect(screen.getByText(hint)).toBeInTheDocument();
-    expect(share).toHaveAccessibleDescription(
-      `${hint} ${SHARE_WARNING} It works once: opening it yourself uses the only view.`,
-    );
-    expect(await screen.findByText('Copying was blocked. Select the text and press Ctrl+C.')).toBe(
-      liveRegion(),
-    );
-    expect(field('Delete link')).toHaveAccessibleDescription(DELETE_HINT);
+    expect(screen.getByText(BLOCKED_MOUSE, { selector: 'p' })).toBeInTheDocument();
+    expect(share).toHaveAccessibleDescription(`${BLOCKED_MOUSE} ${SHARE_HELP_ONCE}`);
+    expect(await screen.findByText(BLOCKED_MOUSE, { selector: 'div' })).toBe(liveRegion());
+    expect(field('Delete link')).toHaveAccessibleDescription(DELETE_HELP);
   });
 
   it('re-renders the relative expiry every 30 seconds', () => {
@@ -244,11 +251,11 @@ describe('delete from the result panel', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('deletes with the token from the delete link, then shows the deleted alert', async () => {
+  it('deletes with the token from the delete link, then reports the deletion', async () => {
     const user = userEvent.setup();
     const response = deferred<Response>();
     fetchMock.mockReturnValueOnce(response.promise);
-    const { onCreateAnother } = renderResult();
+    const { onDeleted } = renderResult();
 
     await confirmDelete(user);
 
@@ -265,18 +272,12 @@ describe('delete from the result panel', () => {
     expect(sent.method).toBe('DELETE');
     expect(sent.headers['x-delete-token']).toBe(DELETE_TOKEN);
 
+    expect(onDeleted).not.toHaveBeenCalled();
     response.resolve(new Response(null, { status: 204 }));
 
-    const alert = await screen.findByRole('group', { name: 'Paste deleted' });
-    expect(alert).toHaveFocus();
-    expect(alert).toHaveTextContent(
-      'The encrypted content is destroyed. The share link now shows that the paste is gone.',
-    );
-    expect(screen.queryByText('Sealed')).not.toBeInTheDocument();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Delete now' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Create another' }));
-    expect(onCreateAnother).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => {
+      expect(onDeleted).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('says so when the paste is already gone and keeps only Create another', async () => {
@@ -288,7 +289,9 @@ describe('delete from the result panel', () => {
 
     const alert = await screen.findByRole('group', { name: 'This paste is already gone' });
     expect(alert).toHaveFocus();
-    expect(alert).toHaveTextContent('It was opened for the last time, expired, or was deleted.');
+    expect(alert).toHaveTextContent(
+      /^This paste is already goneIt expired, was read, or was deleted\.$/,
+    );
     expect(screen.queryByRole('button', { name: /^Delete/ })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create another' })).toBeInTheDocument();
   });
@@ -298,40 +301,21 @@ describe('delete from the result panel', () => {
       name: 'a network failure',
       reply: () => Promise.reject(new TypeError('Failed to fetch')),
       title: 'Could not reach the server',
-      body: () => 'The paste may not be deleted yet. Try again.',
     },
-    {
-      name: '500',
-      reply: () => problemResponse(500),
-      title: 'The paste could not be deleted',
-      body: (expiresAt: Date) =>
-        `The server answered with an error. Try again, or let it expire on its own at ${formatAbsolute(expiresAt)}.`,
-    },
-    {
-      name: '403',
-      reply: () => problemResponse(403),
-      title: 'The paste could not be deleted',
-      body: (expiresAt: Date) =>
-        `The server answered with an error. Try again, or let it expire on its own at ${formatAbsolute(expiresAt)}.`,
-    },
-    {
-      name: '404',
-      reply: () => problemResponse(404),
-      title: 'The paste could not be deleted',
-      body: (expiresAt: Date) =>
-        `The server answered with an error. Try again, or let it expire on its own at ${formatAbsolute(expiresAt)}.`,
-    },
+    { name: '500', reply: () => problemResponse(500), title: 'The server hit an error' },
+    { name: '403', reply: () => problemResponse(403), title: 'The server hit an error' },
+    { name: '404', reply: () => problemResponse(404), title: 'The server hit an error' },
   ])('explains $name, brings the confirm row back and never retries', async (failure) => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
     fetchMock.mockImplementationOnce(async () => failure.reply());
-    const { paste } = renderResult();
+    renderResult();
 
     await confirmDelete(user);
 
     const alert = await screen.findByRole('group', { name: failure.title });
     expect(alert).toHaveFocus();
-    expect(alert).toHaveTextContent(failure.body(paste.expiresAt));
+    expect(alert).toHaveTextContent(`${failure.title}${DELETE_UNKNOWN}`);
     expect(within(alert).queryByText(/403|404|500/)).not.toBeInTheDocument();
     expect(screen.getByText(QUESTION)).toBeInTheDocument();
     const deletePaste = screen.getByRole('button', { name: 'Delete paste' });
@@ -354,13 +338,15 @@ describe('delete from the result panel', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
     fetchMock.mockResolvedValueOnce(problemResponse(429, undefined, { 'Retry-After': '20' }));
-    renderResult();
+    const { onDeleted } = renderResult();
 
     await confirmDelete(user);
 
     const alert = await screen.findByRole('group', { name: 'Too many requests' });
     await expectFocus(alert);
-    expect(alert).toHaveTextContent(/^Too many requestsYou can try again in (20|19) seconds\.$/);
+    expect(alert).toHaveTextContent(
+      /^Too many requestsNothing was deleted\. You can try again in (20|19) seconds\.$/,
+    );
     const deletePaste = screen.getByRole('button', { name: 'Delete paste' });
     expect(deletePaste).toHaveAttribute('aria-disabled', 'true');
     await user.click(deletePaste);
@@ -374,7 +360,9 @@ describe('delete from the result panel', () => {
 
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     await user.click(deletePaste);
-    expect(await screen.findByRole('group', { name: 'Paste deleted' })).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(onDeleted).toHaveBeenCalledTimes(1);
+    });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
@@ -382,7 +370,7 @@ describe('delete from the result panel', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
     fetchMock.mockResolvedValueOnce(problemResponse(429, undefined, { 'Retry-After': '20' }));
-    renderResult();
+    const { onDeleted } = renderResult();
     await confirmDelete(user);
     await expectFocus(await screen.findByRole('group', { name: 'Too many requests' }));
 
@@ -409,7 +397,9 @@ describe('delete from the result panel', () => {
     expect(deletePaste).not.toHaveAttribute('aria-disabled');
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     await user.click(deletePaste);
-    expect(await screen.findByRole('group', { name: 'Paste deleted' })).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(onDeleted).toHaveBeenCalledTimes(1);
+    });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

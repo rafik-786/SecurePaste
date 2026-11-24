@@ -3,5 +3,5 @@
   border-block-end: var(--border-thick) solid var(--color-border-subtle);
   border-start-start-radius: calc(var(--radius-md) - var(--border-hairline));
   border-start-end-radius: calc(var(--radius-md) - var(--border-hairline));
-  background-color: var(--color-surface-sunken);
+  background-color: color-mix(in srgb, var(--color-surface-sunken) var(--glass-tint), transparent);
 }

@@ -13,7 +13,6 @@ export type ReadLinkCheck = 'unsupported' | 'invalid-id' | 'incomplete' | 'ready
 export interface SealedPeek {
   readonly expiresAt: Date;
   readonly remainingViews: number;
-  readonly sizeBytes: number;
 }
 
 export interface OpenedPaste {
@@ -62,7 +61,7 @@ export function readLinkCheck(
 }
 
 export function sealedPeek(peek: PeekResponse, remainingViews: number): SealedPeek {
-  return { expiresAt: parseInstant(peek.expiresAt), remainingViews, sizeBytes: peek.sizeBytes };
+  return { expiresAt: parseInstant(peek.expiresAt), remainingViews };
 }
 
 export function openedPaste(payload: PastePayload, claim: ClaimResponse): OpenedPaste {

@@ -1,6 +1,6 @@
 .main {
   inline-size: 100%;
-  max-inline-size: var(--content-max);
+  max-inline-size: var(--shell-max);
   margin-inline: auto;
   padding-inline: var(--gutter);
   flex: 1 0 auto;
@@ -17,5 +17,14 @@
 @media (max-width: 40em) {
   .main {
     padding-block: var(--space-5);
+  }
+}
+
+@media (min-width: 64em) and (min-height: 45em) {
+  .main {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+    padding-block: var(--space-3);
   }
 }

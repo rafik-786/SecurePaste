@@ -11,7 +11,7 @@ describe('NotFoundRoute', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Page not found' })).toBeInTheDocument();
     expect(
       screen.getByText(
-        'There is nothing at this address. Paste links start with /p/ and delete links with /d/.',
+        'Paste links start with /p/ and delete links with /d/. Check the link you used.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Create a paste' })).toHaveAttribute('href', '/');
@@ -24,9 +24,11 @@ describe('UnsupportedStatus', () => {
     renderWithProviders(<UnsupportedStatus />);
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'This browser cannot encrypt here' }),
+      screen.getByRole('heading', { level: 1, name: "Encryption isn't available here" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Nothing was sent or used\.$/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Open this page over HTTPS in a current browser. Nothing was sent.'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });

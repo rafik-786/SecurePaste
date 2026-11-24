@@ -12,7 +12,6 @@ export interface FieldControlProps {
 
 export interface FieldProps {
   readonly label: string;
-  readonly hint?: ReactNode;
   readonly error?: string | undefined;
   readonly describedBy?: string | undefined;
   readonly id?: string | undefined;
@@ -20,20 +19,10 @@ export interface FieldProps {
   readonly children: (control: FieldControlProps) => ReactNode;
 }
 
-export function Field({
-  label,
-  hint,
-  error,
-  describedBy: extra,
-  id,
-  className,
-  children,
-}: FieldProps) {
+export function Field({ label, error, describedBy: extra, id, className, children }: FieldProps) {
   const generated = useId();
   const controlId = id ?? generated;
-  const hintId = `${controlId}-hint`;
   const errorId = `${controlId}-error`;
-  const hasHint = hint !== undefined && hint !== null && hint !== false;
   const hasError = error !== undefined && error !== '';
 
   return (
@@ -43,29 +32,20 @@ export function Field({
       </label>
       {children({
         id: controlId,
-        'aria-describedby': joinIds(hasHint && hintId, extra, hasError && errorId),
+        'aria-describedby': joinIds(extra, hasError && errorId),
         'aria-invalid': hasError ? true : undefined,
       })}
-      {hasHint && <FieldHint id={hintId}>{hint}</FieldHint>}
       {hasError && <FieldError id={errorId}>{error}</FieldError>}
     </div>
   );
 }
 
-export interface FieldMessageProps {
+export interface FieldErrorProps {
   readonly id: string;
   readonly children: ReactNode;
 }
 
-export function FieldHint({ id, children }: FieldMessageProps) {
-  return (
-    <p id={id} className={styles.hint}>
-      {children}
-    </p>
-  );
-}
-
-export function FieldError({ id, children }: FieldMessageProps) {
+export function FieldError({ id, children }: FieldErrorProps) {
   return (
     <p id={id} className={styles.error}>
       <AlertIcon className={styles.errorIcon} />

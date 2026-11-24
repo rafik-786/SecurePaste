@@ -1,7 +1,7 @@
 import type { MouseEvent } from 'react';
-import { Link, NavLink } from 'react-router';
+import { Link } from 'react-router';
 import { useConfirmLeave } from '../hooks/leaveGuard';
-import { cx } from '../lib/classNames';
+import { cx, GLASS_CLASS } from '../lib/classNames';
 import { PRODUCT_NAME } from '../lib/product';
 import { LockIcon } from './icons/icons';
 import { ThemeToggle } from './ThemeToggle';
@@ -16,18 +16,13 @@ export function Header() {
   };
 
   return (
-    <header className={styles.header}>
+    <header className={cx(GLASS_CLASS, styles.header)}>
       <div className={styles.container}>
         <Link to="/" className={styles.wordmark} onClick={guardLeave}>
           <LockIcon size={20} className={styles.lock} />
           <span>{PRODUCT_NAME}</span>
         </Link>
-        <nav aria-label="Main" className={styles.nav}>
-          <NavLink to="/about" className={cx(styles.navLink)} onClick={guardLeave}>
-            About
-          </NavLink>
-          <ThemeToggle />
-        </nav>
+        <ThemeToggle />
       </div>
     </header>
   );

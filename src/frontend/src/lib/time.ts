@@ -1,4 +1,5 @@
 const LOCALE = 'en';
+const DATE_LOCALE = 'en-IN';
 const SECOND_MS = 1_000;
 const MINUTE_SECONDS = 60;
 const HOUR_SECONDS = 3_600;
@@ -15,7 +16,7 @@ const INSTANT_PATTERN = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?(Z|[+
 
 const relativeFormat = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'always' });
 const absoluteOptions: Intl.DateTimeFormatOptions = { dateStyle: 'medium', timeStyle: 'short' };
-const localAbsoluteFormat = new Intl.DateTimeFormat(LOCALE, absoluteOptions);
+const localAbsoluteFormat = new Intl.DateTimeFormat(DATE_LOCALE, absoluteOptions);
 
 function tryParseInstant(text: string): Date | undefined {
   const match = INSTANT_PATTERN.exec(text);
@@ -66,6 +67,6 @@ export function formatAbsolute(date: Date, timeZone?: string): string {
   const format =
     timeZone === undefined
       ? localAbsoluteFormat
-      : new Intl.DateTimeFormat(LOCALE, { ...absoluteOptions, timeZone });
+      : new Intl.DateTimeFormat(DATE_LOCALE, { ...absoluteOptions, timeZone });
   return format.format(date);
 }

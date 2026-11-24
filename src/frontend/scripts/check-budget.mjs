@@ -8,8 +8,9 @@ const BUDGET_KB = {
   highlightCore: 10,
   grammar: 5,
   css: 15,
+  firstLoadFonts: 93,
 };
-const FONT_FILE = /\.(woff2?|ttf|otf|eot)$/i;
+const FONT_PRELOAD = /<link rel="preload" href="\/([^"]+)" as="font"/g;
 const CSS_FILE = /\.css$/i;
 const HIGHLIGHT_CORE = /node_modules\/highlight\.js\/(es|lib)\/core\.js$/;
 const GRAMMAR = /node_modules\/highlight\.js\/(es|lib)\/languages\/([\w-]+)\.js$/;
@@ -34,6 +35,22 @@ async function gzippedBytes(file) {
 async function totalGzipped(files) {
   const sizes = await Promise.all(files.map(gzippedBytes));
   return sizes.reduce((sum, size) => sum + size, 0);
+}
+
+async function totalRaw(files) {
+  const sizes = await Promise.all(
+    files.map(async (file) => (await readFile(path.join(distDir, file))).length),
+  );
+  return sizes.reduce((sum, size) => sum + size, 0);
+}
+
+async function preloadedFonts() {
+  const html = await readFile(path.join(distDir, ENTRY), 'utf8');
+  const files = [...html.matchAll(FONT_PRELOAD)].map(([, file]) => file);
+  if (files.length === 0) {
+    throw new Error(`${ENTRY} preloads no fonts. Did the build plugin stop injecting them?`);
+  }
+  return files;
 }
 
 function staticClosure(manifest, keys) {
@@ -85,7 +102,7 @@ async function measure() {
   }
   const files = await listFiles(distDir);
   const cssFiles = files.filter((file) => CSS_FILE.test(file));
-  const fontFiles = files.filter((file) => FONT_FILE.test(file));
+  const fontFiles = await preloadedFonts();
 
   const createFiles = staticClosure(manifest, [ENTRY, CREATE_ROUTE]);
   const readFiles = staticClosure(manifest, [ENTRY, READ_ROUTE]);
@@ -125,13 +142,12 @@ async function measure() {
       .filter(({ bytes }) => bytes > BUDGET_KB.grammar * KB)
       .map(({ name, file, bytes }) => row(`grammar ${name}`, [file], bytes, BUDGET_KB.grammar)),
     row('all CSS', cssFiles, await totalGzipped(cssFiles), BUDGET_KB.css),
-    {
-      item: 'web fonts',
-      files: fontFiles.map((file) => path.basename(file)).join(' + ') || 'none',
-      size: `${fontFiles.length} ${fontFiles.length === 1 ? 'file' : 'files'}`,
-      budget: '0 files',
-      ok: fontFiles.length === 0,
-    },
+    row(
+      'fonts preloaded for "/" (woff2, sent as is)',
+      fontFiles,
+      await totalRaw(fontFiles),
+      BUDGET_KB.firstLoadFonts,
+    ),
   ];
   return rows;
 }
@@ -139,7 +155,7 @@ async function measure() {
 function printTable(rows) {
   const header = {
     item: 'Budget item',
-    size: 'Gzipped',
+    size: 'Size',
     budget: 'Limit',
     status: 'Result',
     files: 'Files',
@@ -161,7 +177,7 @@ function printTable(rows) {
 try {
   const rows = await measure();
   console.log(
-    `Bundle budget, gzip level 9, from ${path.relative(process.cwd(), distDir) || '.'}:\n`,
+    `Bundle budget from ${path.relative(process.cwd(), distDir) || '.'}, gzip level 9; fonts are already compressed and counted as sent:\n`,
   );
   printTable(rows);
   const over = rows.filter(({ ok }) => !ok);

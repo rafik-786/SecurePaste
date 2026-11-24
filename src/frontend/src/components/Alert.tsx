@@ -1,6 +1,6 @@
 import { useId, useRef, type ReactNode } from 'react';
 import { useFocusOnChange } from '../hooks/useFocusOnChange';
-import { cx } from '../lib/classNames';
+import { cx, GLASS_CLASS } from '../lib/classNames';
 import { AlertIcon, CheckIcon, InfoIcon } from './icons/icons';
 import type { IconComponent } from './icons/types';
 import styles from './Alert.module.css';
@@ -45,7 +45,7 @@ export function Alert({
     <div
       ref={ref}
       id={id}
-      className={cx(styles.alert, styles[variant], className)}
+      className={cx(GLASS_CLASS, styles.alert, styles[variant], className)}
       role={hasTitle ? 'group' : undefined}
       aria-labelledby={hasTitle ? titleId : undefined}
       tabIndex={focusKey === undefined ? undefined : -1}

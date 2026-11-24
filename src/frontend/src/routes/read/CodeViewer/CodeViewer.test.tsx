@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { highlight } from '../../../lib/highlight';
 import type { LanguageId } from '../../../lib/languages';
+import { FINE_POINTER, setMediaQuery } from '../../../test/media';
 import { liveRegion, renderWithProviders } from '../../../test/render';
 import { CodeViewer } from './CodeViewer';
 
@@ -12,8 +13,8 @@ vi.mock('../../../lib/highlight', async (importOriginal) => {
 });
 
 const ID = 'x7k2mn4pq9rs';
-const SIZE_NOTE = 'Syntax highlighting is off for pastes over 128 KB.';
-const LINE_NOTE = 'Syntax highlighting is off for lines over 10,000 characters.';
+const SIZE_NOTE = "Syntax highlighting is off for this paste: it's too long.";
+const LINE_NOTE = 'Syntax highlighting is off for this paste: a line is over 10,000 characters.';
 const BASH = '# staging database\nexport DB_HOST=db.internal\nexport DB_PASSWORD=hunter2\n';
 const OBJECT_URL = 'blob:http://localhost:3000/a1b2';
 const LINE_SEPARATOR = String.fromCharCode(0x2028);
@@ -189,6 +190,7 @@ describe('CodeViewer copy', () => {
   });
 
   it('selects the code and explains the shortcut when copying is blocked', async () => {
+    setMediaQuery(FINE_POINTER, true);
     const user = userEvent.setup();
     renderViewer(BASH);
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('blocked'));
@@ -196,9 +198,7 @@ describe('CodeViewer copy', () => {
     await user.click(screen.getByRole('button', { name: 'Copy' }));
 
     expect(
-      await screen.findByText(
-        'Copying was blocked by the browser. The text is selected: press Ctrl+C.',
-      ),
+      await screen.findByText('Copying was blocked. Press Ctrl+C.', { selector: 'p' }),
     ).toBeInTheDocument();
     expect(window.getSelection()?.toString()).toContain('export DB_PASSWORD=hunter2');
     expect(screen.getByRole('button', { name: 'Copy failed' })).toBeInTheDocument();
@@ -267,7 +267,7 @@ describe('CodeViewer highlighting', () => {
     expect(note.compareDocumentPosition(region()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('shows only the 128 KB note when both caps apply', () => {
+  it('shows only the size note when both caps apply', () => {
     renderViewer('x'.repeat(131_073), 'rust');
 
     expect(screen.getByText(SIZE_NOTE)).toBeInTheDocument();

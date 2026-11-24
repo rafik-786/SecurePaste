@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect } from 'react';
 
-export const LEAVE_PROMPT = 'This paste is destroyed and cannot be shown again. Leave this page?';
+export const LEAVE_PROMPT = "This paste can't be opened again. Leave this page?";
 
 export interface LeaveGuard {
   readonly hold: () => () => void;

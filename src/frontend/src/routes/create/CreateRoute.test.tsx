@@ -29,8 +29,12 @@ type User = ReturnType<typeof userEvent.setup>;
 
 const SUBMIT = 'Encrypt and create link';
 const TEXT_KEPT = 'Your text is still here.';
-const SHARE_WARNING =
-  'Anyone with this link can read the paste. The part after the # is the key, so send the whole link over a channel you trust.';
+const EMPTY_ERROR = 'Add some text first.';
+const REJECTED =
+  'Nothing was created. Your text is still here. Copy it, then reload the page and try again.';
+const TOO_LARGE =
+  'The limit is 256 KB after encryption. Your text is still here. Shorten it and try again.';
+const SERVER_ERROR = 'Your text is still here. Try again in a moment.';
 
 beforeEach(() => {
   installCreateEnvironment();
@@ -84,9 +88,7 @@ describe('create form', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'New paste' })).toBeInTheDocument();
     expect(document.title).toBe('New paste - SecurePaste');
     expect(
-      screen.getByText(
-        'Encrypted in your browser before upload. The server stores only ciphertext and never sees the key.',
-      ),
+      screen.getByText('Encrypted in your browser. The server never sees the key.'),
     ).toBeInTheDocument();
 
     const content = contentField();
@@ -96,9 +98,7 @@ describe('create form', () => {
 
     const language = screen.getByRole('combobox', { name: 'Language' });
     expect(language).toHaveValue('plaintext');
-    expect(language).toHaveAccessibleDescription(
-      'Used for syntax highlighting. Stored inside the encrypted paste.',
-    );
+    expect(language).not.toHaveAttribute('aria-describedby');
     expect(
       within(language)
         .getAllByRole('option')
@@ -117,11 +117,14 @@ describe('create form', () => {
       ),
     );
     expect(within(expiry).getByRole('radio', { name: '1 day' })).toBeChecked();
-    expect(expiry).toHaveAccessibleDescription(
-      'Removed from the server at this time, even if nobody opened it.',
-    );
+    expect(expiry).not.toHaveAttribute('aria-describedby');
 
     expect(screen.getByRole('radio', { name: 'Burn after reading' })).toBeChecked();
+    for (const radio of within(screen.getByRole('group', { name: 'Views' })).getAllByRole(
+      'radio',
+    )) {
+      expect(radio).not.toHaveAttribute('aria-describedby');
+    }
     expect(screen.getByRole('radio', { name: 'Limit to 5 views' })).not.toBeChecked();
     expect(screen.getByRole('radio', { name: 'Unlimited' })).not.toBeChecked();
     expect(viewCountField()).toHaveValue('5');
@@ -130,16 +133,33 @@ describe('create form', () => {
     expect(submit).toHaveAttribute('type', 'submit');
     expect(submit).toHaveAttribute('aria-keyshortcuts', 'Control+Enter Meta+Enter');
     expect(submit).not.toHaveAttribute('aria-disabled');
-    expect(screen.getByText('Ctrl+Enter').tagName).toBe('KBD');
+    expect(submit).toHaveAccessibleName('Encrypt and create link');
+    expect(submit).toHaveTextContent(/^Encrypt and create link/);
+    expect(submit).not.toHaveAttribute('title');
+    expect(document.querySelector('kbd')).toBeNull();
     expect(screen.queryByRole('group', { name: /server|network/ })).not.toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('focuses the text area on a full page load with a mouse', () => {
+  it('focuses the text area and names the shortcut in a tooltip on a full page load with a mouse', () => {
     setMediaQuery(FINE_POINTER, true);
     renderCreate();
 
     expect(contentField()).toHaveFocus();
+    expect(submitButton()).toHaveAttribute('title', 'Ctrl+Enter');
+  });
+
+  it('says "view", not "views", when the limit is 1', async () => {
+    const user = userEvent.setup();
+    renderCreate();
+
+    await user.click(screen.getByRole('radio', { name: 'Limit to 5 views' }));
+    await user.clear(viewCountField());
+    await user.type(viewCountField(), '1');
+
+    expect(screen.getByRole('radio', { name: 'Limit to 1 view' })).toBeChecked();
+    await user.type(viewCountField(), '2');
+    expect(screen.getByRole('radio', { name: 'Limit to 12 views' })).toBeChecked();
   });
 
   it('leaves focus alone on a full page load on a touch screen', () => {
@@ -151,8 +171,8 @@ describe('create form', () => {
   it('focuses the heading, not the text area, after in-app navigation', async () => {
     const user = userEvent.setup();
     setMediaQuery(FINE_POINTER, true);
-    renderApp('/about');
-    await screen.findByRole('heading', { level: 1, name: 'How SecurePaste works' });
+    renderApp('/nowhere');
+    await screen.findByRole('heading', { level: 1, name: 'Page not found' });
 
     await user.click(within(screen.getByRole('banner')).getByRole('link', { name: 'SecurePaste' }));
 
@@ -220,7 +240,7 @@ describe('create form validation', () => {
     expect(content).toHaveFocus();
     expect(content).toHaveAttribute('aria-invalid', 'true');
     expect(content).toHaveAccessibleDescription(
-      /^Size after encryption .* of 256 KB Error: Paste some text first\.$/,
+      /^Size after encryption .* of 256 KB Error: Add some text first\.$/,
     );
     expect(content).toHaveValue(text);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -281,16 +301,16 @@ describe('create form validation', () => {
     renderCreate();
 
     await user.tab();
-    expect(screen.queryByText('Paste some text first.')).not.toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_ERROR)).not.toBeInTheDocument();
 
     await user.type(contentField(), 'x');
     await user.clear(contentField());
     await user.tab();
-    expect(screen.getByText('Paste some text first.')).toBeInTheDocument();
+    expect(screen.getByText(EMPTY_ERROR)).toBeInTheDocument();
     expect(contentField()).toHaveAttribute('aria-invalid', 'true');
 
     await user.type(contentField(), 'y');
-    expect(screen.queryByText('Paste some text first.')).not.toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_ERROR)).not.toBeInTheDocument();
     expect(contentField()).not.toHaveAttribute('aria-invalid');
 
     await user.clear(viewCountField());
@@ -302,7 +322,7 @@ describe('create form validation', () => {
   });
 
   it.each([
-    { name: 'whitespace-only text', text: '   \n', error: 'Paste some text first.' },
+    { name: 'whitespace-only text', text: '   \n', error: EMPTY_ERROR },
     {
       name: 'text over the limit',
       text: 'a'.repeat(270_000),
@@ -356,10 +376,10 @@ describe('create form validation', () => {
     const submit = submitButton();
 
     await user.pointer({ keys: '[MouseLeft>]', target: submit });
-    expect(screen.queryByText('Paste some text first.')).not.toBeInTheDocument();
+    expect(screen.queryByText(EMPTY_ERROR)).not.toBeInTheDocument();
     await user.pointer({ keys: '[/MouseLeft]', target: screen.getByText('Views') });
 
-    expect(await screen.findByText('Paste some text first.')).toBeInTheDocument();
+    expect(await screen.findByText(EMPTY_ERROR)).toBeInTheDocument();
     expect(contentField()).toHaveAttribute('aria-invalid', 'true');
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -554,55 +574,49 @@ describe('create failures', () => {
       reply: () => problemResponse(400, 'The ciphertext is not valid base64.'),
       variant: 'danger',
       title: 'The server rejected this paste',
-      lines: ['The ciphertext is not valid base64.', TEXT_KEPT],
+      lines: [REJECTED],
     },
     {
       name: '400 without a body',
       reply: () => new Response(null, { status: 400 }),
       variant: 'danger',
       title: 'The server rejected this paste',
-      lines: ['The request was not valid.', TEXT_KEPT],
+      lines: [REJECTED],
     },
     {
       name: '413 with a problem body',
       reply: () => problemResponse(413, 'The paste is larger than 262144 bytes.'),
       variant: 'danger',
       title: 'This paste is too large',
-      lines: [
-        'The server accepts up to 256 KB after encryption. Shorten the text and try again. Your text is still here.',
-      ],
+      lines: [TOO_LARGE],
     },
     {
       name: '413 without a body',
       reply: () => new Response('<html>Request Entity Too Large</html>', { status: 413 }),
       variant: 'danger',
       title: 'This paste is too large',
-      lines: [
-        'The server accepts up to 256 KB after encryption. Shorten the text and try again. Your text is still here.',
-      ],
+      lines: [TOO_LARGE],
     },
     {
       name: 'a request that never reached the server',
       reply: () => Promise.reject(new TypeError('Failed to fetch')),
       variant: 'danger',
       title: 'Could not reach the server',
-      lines: [
-        'Check your connection and try again. Your text is still here. If the request did reach the server, that paste has no link anywhere and expires on its own.',
-      ],
+      lines: ['Your text is still here. Check your connection and try again.'],
     },
     {
       name: '500',
       reply: () => problemResponse(500, 'NullReferenceException at PasteStore.cs:42'),
       variant: 'danger',
       title: 'The server hit an error',
-      lines: ['Try again in a moment. Your text is still here.'],
+      lines: [SERVER_ERROR],
     },
     {
       name: 'a 201 the client cannot read',
       reply: () => jsonResponse(201, { id: PASTE_ID }),
       variant: 'danger',
       title: 'The server hit an error',
-      lines: ['Try again in a moment. Your text is still here.'],
+      lines: [SERVER_ERROR],
     },
     {
       name: 'a 201 whose delete token a link would rewrite',
@@ -614,7 +628,7 @@ describe('create failures', () => {
         }),
       variant: 'danger',
       title: 'The server hit an error',
-      lines: ['Try again in a moment. Your text is still here.'],
+      lines: [SERVER_ERROR],
     },
   ])('explains $name in a focused alert and keeps the text', async ({ reply, title, lines }) => {
     const user = userEvent.setup();
@@ -630,13 +644,15 @@ describe('create failures', () => {
     for (const line of lines) {
       expect(within(alert).getByText(line)).toBeInTheDocument();
     }
-    expect(alert).not.toHaveTextContent(/NullReference|500|413|400/);
+    expect(alert).not.toHaveTextContent(/NullReference|base64|262144|500|413|400/);
     expect(contentField()).toHaveValue(CONTENT);
     expect(contentField()).not.toHaveAttribute('readonly');
     expect(submitButton()).not.toHaveAttribute('aria-disabled');
-    const views = screen.getByRole('group', { name: 'Views' });
-    expect(views.compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(alert.compareDocumentPosition(submitButton()) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+    const language = screen.getByRole('combobox', { name: 'Language' });
+    expect(
+      contentField().compareDocumentPosition(alert) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(alert.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });
@@ -656,7 +672,7 @@ describe('create failures', () => {
     });
     expect(alert).toHaveFocus();
     expect(
-      within(alert).getByText('Nothing was sent. Try again. Your text is still here.'),
+      within(alert).getByText('Nothing was sent. Your text is still here. Try again.'),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('group', { name: 'The server hit an error' }),
@@ -702,7 +718,7 @@ describe('create failures', () => {
       timeouts.at(-1)?.abort(new DOMException('signal timed out', 'TimeoutError'));
     });
 
-    expect(await screen.findByRole('group', { name: 'Could not reach the server' })).toHaveFocus();
+    await expectFocus(await screen.findByRole('group', { name: 'Could not reach the server' }));
     expect(timeout).toHaveBeenCalledWith(REQUEST_TIMEOUT_MS);
     expect(REQUEST_TIMEOUT_MS).toBe(15_000);
   });
@@ -777,7 +793,7 @@ describe('create success', () => {
     const copy = screen.getByRole('button', { name: 'Copy link' });
     expect(copy).toHaveFocus();
     expect(copy).toHaveAccessibleDescription(
-      `${SHARE_WARNING} It works once: opening it yourself uses the only view.`,
+      "Anyone with this link can read it once. Don't test it yourself.",
     );
     expect(shareLinkField().value).toMatch(
       new RegExp(`^${ORIGIN}/p/${PASTE_ID}#[A-Za-z0-9_-]{43}$`),
@@ -814,6 +830,32 @@ describe('create success', () => {
     expect(screen.getByRole('radio', { name: '7 days' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Limit to 12 views' })).toBeChecked();
     expect(screen.queryByRole('textbox', { name: 'Share link' })).not.toBeInTheDocument();
+  });
+
+  it('Delete now replaces the result with a focused Paste deleted page', async () => {
+    const user = userEvent.setup();
+    renderCreate();
+    await user.click(screen.getByRole('radio', { name: '7 days' }));
+    await createWith(user);
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    await user.click(screen.getByRole('button', { name: 'Delete now' }));
+    await user.click(screen.getByRole('button', { name: 'Delete paste' }));
+
+    const heading = await screen.findByRole('heading', { level: 1, name: 'Paste deleted' });
+    await expectFocus(heading);
+    expect(document.title).toBe('Paste deleted - SecurePaste');
+    expect(screen.queryByRole('heading', { name: 'Link created' })).not.toBeInTheDocument();
+    expect(screen.getByText('The link no longer works.')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(DELETE_TOKEN);
+
+    await user.click(screen.getByRole('button', { name: 'Create another' }));
+
+    expect(screen.getByRole('heading', { level: 1, name: 'New paste' })).toBeInTheDocument();
+    expect(contentField()).toHaveValue('');
+    expect(contentField()).toHaveFocus();
+    expect(screen.getByRole('radio', { name: '7 days' })).toBeChecked();
   });
 
   it('clears the links before the back-forward cache can freeze the page', async () => {
@@ -858,7 +900,7 @@ describe('create without Web Crypto', () => {
     renderCreate();
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'This browser cannot encrypt here' }),
+      screen.getByRole('heading', { level: 1, name: "Encryption isn't available here" }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();

@@ -10,7 +10,7 @@ export function NotFoundRoute() {
       title="Page not found"
       actions={<CreatePasteLink variant="primary" />}
     >
-      <p>There is nothing at this address. Paste links start with /p/ and delete links with /d/.</p>
+      <p>Paste links start with /p/ and delete links with /d/. Check the link you used.</p>
     </StatusPage>
   );
 }

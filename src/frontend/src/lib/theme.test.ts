@@ -1,81 +1,39 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DARK_SCHEME, installMatchMedia, resetMediaQueries, setMediaQuery } from '../test/media';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  appliedTheme,
   chooseTheme,
-  clearStoredTheme,
-  effectiveTheme,
+  currentTheme,
+  DEFAULT_THEME,
   oppositeTheme,
-  storeTheme,
   subscribeToTheme,
-  systemTheme,
   THEME_ATTRIBUTE,
   THEME_STORAGE_KEY,
 } from './theme';
 
 const root = document.documentElement;
 
-beforeEach(() => {
-  installMatchMedia();
-});
-
 afterEach(() => {
   vi.restoreAllMocks();
-  resetMediaQueries();
   localStorage.clear();
   root.removeAttribute(THEME_ATTRIBUTE);
 });
 
-describe('stored choice', () => {
+describe('current theme', () => {
   it('uses the securepaste.theme key', () => {
     expect(THEME_STORAGE_KEY).toBe('securepaste.theme');
   });
 
-  it('stores and clears light and dark', () => {
-    storeTheme('dark');
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
-    storeTheme('light');
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
-
-    clearStoredTheme();
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+  it('is dark without a choice', () => {
+    expect(DEFAULT_THEME).toBe('dark');
+    expect(currentTheme()).toBe('dark');
   });
 
-  it('does not throw when storage throws', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new DOMException('full', 'QuotaExceededError');
-    });
-    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
-      throw new DOMException('denied', 'SecurityError');
-    });
-
-    expect(() => {
-      storeTheme('dark');
-    }).not.toThrow();
-    expect(() => {
-      clearStoredTheme();
-    }).not.toThrow();
-  });
-});
-
-describe('effective theme', () => {
-  it('follows the system without a choice', () => {
-    expect(systemTheme()).toBe('light');
-    expect(effectiveTheme()).toBe('light');
-
-    setMediaQuery(DARK_SCHEME, true);
-
-    expect(systemTheme()).toBe('dark');
-    expect(effectiveTheme()).toBe('dark');
-  });
-
-  it('lets the applied choice win over the system', () => {
-    setMediaQuery(DARK_SCHEME, true);
+  it('is light only when the light attribute is applied', () => {
     root.setAttribute(THEME_ATTRIBUTE, 'light');
+    expect(currentTheme()).toBe('light');
 
-    expect(appliedTheme()).toBe('light');
-    expect(effectiveTheme()).toBe('light');
+    root.setAttribute(THEME_ATTRIBUTE, 'sepia');
+    expect(currentTheme()).toBe('dark');
   });
 
   it('flips between the two themes', () => {
@@ -85,43 +43,47 @@ describe('effective theme', () => {
 });
 
 describe('chooseTheme', () => {
-  it('stores and applies a theme that differs from the system', () => {
-    chooseTheme('dark');
+  it('stores and applies light', () => {
+    chooseTheme('light');
 
-    expect(root.getAttribute(THEME_ATTRIBUTE)).toBe('dark');
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
+    expect(root.getAttribute(THEME_ATTRIBUTE)).toBe('light');
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light');
   });
 
-  it('forgets the choice when it equals the system, so the system decides again', () => {
-    chooseTheme('dark');
-
+  it('removes the stored choice for dark, because dark is the default', () => {
     chooseTheme('light');
+
+    chooseTheme('dark');
 
     expect(root.hasAttribute(THEME_ATTRIBUTE)).toBe(false);
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
-  it('applies the theme for this page even when storage refuses it', () => {
+  it('applies the theme for this page even when storage throws', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('denied', 'SecurityError');
     });
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError');
+    });
+
+    chooseTheme('light');
+    expect(currentTheme()).toBe('light');
 
     chooseTheme('dark');
-
-    expect(effectiveTheme()).toBe('dark');
+    expect(currentTheme()).toBe('dark');
   });
 
-  it('notifies subscribers of choices and of system changes until they unsubscribe', () => {
+  it('notifies subscribers of choices until they unsubscribe', () => {
     const listener = vi.fn();
     const unsubscribe = subscribeToTheme(listener);
 
+    chooseTheme('light');
     chooseTheme('dark');
-    setMediaQuery(DARK_SCHEME, true);
     expect(listener).toHaveBeenCalledTimes(2);
 
     unsubscribe();
     chooseTheme('light');
-    setMediaQuery(DARK_SCHEME, false);
     expect(listener).toHaveBeenCalledTimes(2);
   });
 });

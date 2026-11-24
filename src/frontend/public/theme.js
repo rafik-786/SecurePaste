@@ -5,7 +5,7 @@
   } catch (error) {
     theme = null;
   }
-  if (theme === 'light' || theme === 'dark') {
-    document.documentElement.setAttribute('data-theme', theme);
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
   }
 })();

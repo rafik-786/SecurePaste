@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type Ref, type RefObject } from 'react';
 import { useAnnounce } from '../hooks/announcer';
-import { copyBlockedAnnouncement, copyBlockedHint } from '../lib/format';
-import { isApplePlatform } from '../lib/platform';
+import { copyBlockedMessage } from '../lib/format';
+import { hasFinePointer, isApplePlatform } from '../lib/platform';
 import { Button, type ButtonSize, type ButtonVariant } from './Button';
 import { AlertIcon, CheckIcon, CopyIcon } from './icons/icons';
 import type { IconProps } from './icons/types';
@@ -35,9 +35,14 @@ function selectForManualCopy(element: HTMLElement): void {
   window.getSelection()?.selectAllChildren(element);
 }
 
+function blockedMessage(): string {
+  return copyBlockedMessage(isApplePlatform(), hasFinePointer());
+}
+
 export interface CopyButtonProps {
   readonly text: string;
   readonly label: string;
+  readonly idleName?: string | undefined;
   readonly copiedAnnouncement: string;
   readonly selectOnFailure?: RefObject<HTMLElement | null>;
   readonly onOutcome?: (outcome: CopyOutcome) => void;
@@ -51,6 +56,7 @@ export interface CopyButtonProps {
 export function CopyButton({
   text,
   label,
+  idleName,
   copiedAnnouncement,
   selectOnFailure,
   onOutcome,
@@ -82,13 +88,13 @@ export function CopyButton({
     timer.current = window.setTimeout(() => {
       setOutcome(undefined);
     }, COPY_FEEDBACK_MS);
-    announce(copied ? copiedAnnouncement : copyBlockedAnnouncement(isApplePlatform()));
+    announce(copied ? copiedAnnouncement : blockedMessage());
     onOutcome?.(next);
   };
 
   const shown =
     outcome === 'copied'
-      ? { icon: CopiedIcon, text: COPIED_LABEL }
+      ? { icon: variant === 'primary' ? CheckIcon : CopiedIcon, text: COPIED_LABEL }
       : outcome === 'failed'
         ? { icon: AlertIcon, text: COPY_FAILED_LABEL }
         : { icon: CopyIcon, text: label };
@@ -101,6 +107,7 @@ export function CopyButton({
       className={className}
       icon={shown.icon}
       reserveLabels={[label, COPIED_LABEL, COPY_FAILED_LABEL]}
+      aria-label={outcome === undefined ? idleName : undefined}
       aria-describedby={describedBy}
       onClick={() => {
         void copy();
@@ -119,7 +126,7 @@ export interface CopyBlockedHintProps {
 export function CopyBlockedHint({ id, className }: CopyBlockedHintProps) {
   return (
     <p id={id} className={className ?? styles.hint}>
-      {copyBlockedHint(isApplePlatform())}
+      {blockedMessage()}
     </p>
   );
 }

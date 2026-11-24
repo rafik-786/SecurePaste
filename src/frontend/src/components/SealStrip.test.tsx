@@ -28,17 +28,11 @@ describe('SealStrip', () => {
     const { container } = render(
       <SealStrip
         state="sealed"
-        items={[
-          '1 view left',
-          <ExpiryTime key="expiry" expiresAt={EXPIRES_AT} now={NOW} />,
-          '136 bytes encrypted',
-        ]}
+        items={['1 view left', <ExpiryTime key="expiry" expiresAt={EXPIRES_AT} now={NOW} />]}
       />,
     );
 
-    expect(container.firstElementChild?.textContent).toBe(
-      'Sealed 1 view left Expires in 23 hours 136 bytes encrypted',
-    );
+    expect(container.firstElementChild?.textContent).toBe('Sealed 1 view left Expires in 23 hours');
   });
 });
 

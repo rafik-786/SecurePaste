@@ -34,3 +34,22 @@
     align-self: stretch;
   }
 }
+
+@media (min-width: 64em) and (min-height: 45em) {
+  .page {
+    max-inline-size: var(--content-max);
+  }
+
+  .page.opened {
+    flex: 1 1 auto;
+    max-inline-size: none;
+    min-block-size: 0;
+  }
+
+  .pasteCard {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  copyBlockedAnnouncement,
-  copyBlockedHint,
+  copyBlockedMessage,
   formatBytes,
   formatEncryptedSize,
   formatLineCount,
@@ -10,6 +9,7 @@ import {
   formatShortcut,
   NEAR_LIMIT_BYTES,
   revealCostSentence,
+  shareLinkHelp,
   SIZE_LIMIT_LABEL,
   sizeMeterState,
   sizeMeterText,
@@ -17,7 +17,6 @@ import {
   viewsLeftLabel,
   viewsRemainSentence,
   viewsSettingLabel,
-  viewsSettingSentence,
 } from './format';
 import { MAX_CIPHERTEXT_BYTES } from './limits';
 
@@ -123,15 +122,13 @@ describe('views phrases', () => {
   });
 
   it('states the cost of a reveal', () => {
-    expect(revealCostSentence(1)).toBe(
-      'This is the last view. After you reveal it, the paste is destroyed.',
-    );
-    expect(revealCostSentence(5)).toBe('Revealing uses 1 of 5 remaining views.');
+    expect(revealCostSentence(1)).toBe('This is the last view. Revealing it destroys the paste.');
+    expect(revealCostSentence(5)).toBe('Revealing uses 1 of 5 views.');
   });
 
   it.each([
     { remaining: null, expected: undefined },
-    { remaining: 0, expected: 'The paste is now destroyed.' },
+    { remaining: 0, expected: undefined },
     { remaining: 1, expected: '1 view remains.' },
     { remaining: 4, expected: '4 views remain.' },
   ])('owns up to the views left after a failed decryption', ({ remaining, expected }) => {
@@ -142,21 +139,21 @@ describe('views phrases', () => {
     {
       maxViews: 1,
       label: 'Burn after reading',
-      sentence: 'It works once: opening it yourself uses the only view.',
+      help: "Anyone with this link can read it once. Don't test it yourself.",
     },
     {
       maxViews: 5,
       label: '5 views',
-      sentence: 'It can be opened 5 times, including by you.',
+      help: 'Anyone with this link can read it 5 times.',
     },
     {
       maxViews: null,
       label: 'Unlimited views',
-      sentence: 'It can be opened any number of times until it expires.',
+      help: 'Anyone with this link can read it until it expires.',
     },
-  ])('summarises the views setting $maxViews', ({ maxViews, label, sentence }) => {
+  ])('summarises the views setting $maxViews', ({ maxViews, label, help }) => {
     expect(viewsSettingLabel(maxViews)).toBe(label);
-    expect(viewsSettingSentence(maxViews)).toBe(sentence);
+    expect(shareLinkHelp(maxViews)).toBe(help);
   });
 });
 
@@ -170,13 +167,15 @@ describe('formatShortcut', () => {
 });
 
 describe('copy fallback messages', () => {
-  it('names the copy shortcut of the platform', () => {
-    expect(copyBlockedAnnouncement(false)).toBe(
-      'Copying was blocked. Select the text and press Ctrl+C.',
-    );
-    expect(copyBlockedHint(true)).toBe(
-      'Copying was blocked by the browser. The text is selected: press Cmd+C.',
-    );
+  it('names the copy shortcut of the platform on a mouse device', () => {
+    expect(copyBlockedMessage(false, true)).toBe('Copying was blocked. Press Ctrl+C.');
+    expect(copyBlockedMessage(true, true)).toBe('Copying was blocked. Press Cmd+C.');
+  });
+
+  it('tells a touch screen how to copy by hand, with no keyboard shortcut', () => {
+    const touch = 'Copying was blocked. Touch and hold the text, then tap Copy.';
+    expect(copyBlockedMessage(false, false)).toBe(touch);
+    expect(copyBlockedMessage(true, false)).toBe(touch);
   });
 });
 

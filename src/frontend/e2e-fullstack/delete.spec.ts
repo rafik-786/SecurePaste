@@ -36,7 +36,7 @@ test('the copied delete link deletes the paste, and the share link then shows it
   expect(reader.apiCalls).toEqual([{ method: 'GET', path: pastePath(paste.id) }]);
 });
 
-test('a well-formed but wrong delete token gets "does not match" and the paste survives', async ({
+test('a well-formed but wrong delete token gets a mismatch page and the paste survives', async ({
   visit,
 }) => {
   const author = await visit({ clipboard: true });
@@ -52,7 +52,7 @@ test('a well-formed but wrong delete token gets "does not match" and the paste s
 
   expect((await answer).status()).toBe(403);
   await expect(
-    owner.page.getByRole('heading', { level: 1, name: 'This delete link does not match' }),
+    owner.page.getByRole('heading', { level: 1, name: "This delete link doesn't match" }),
   ).toBeFocused();
   await owner.expectHttpError(403);
 

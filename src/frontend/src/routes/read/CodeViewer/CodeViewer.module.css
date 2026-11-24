@@ -11,7 +11,7 @@
   min-block-size: 3rem;
   padding-block: var(--space-2);
   padding-inline: var(--space-4);
-  background-color: var(--color-surface);
+  background-color: var(--glass-bg-strong);
   border-block-end: var(--border-hairline) solid var(--color-border-subtle);
 }
 
@@ -43,7 +43,7 @@
 .toolbar .wrapToggle[aria-pressed='true'],
 .toolbar .wrapToggle[aria-pressed='true']:hover,
 .toolbar .wrapToggle[aria-pressed='true']:active {
-  background-color: var(--color-accent-tint);
+  background-color: color-mix(in srgb, var(--color-accent-tint) var(--glass-tint), transparent);
   border-color: var(--color-accent);
   color: var(--color-accent);
   box-shadow: inset 0 0 0 var(--border-thick) var(--color-accent);
@@ -52,7 +52,7 @@
 .notice {
   padding-block: var(--space-2);
   padding-inline: var(--space-4);
-  background-color: var(--color-surface);
+  background-color: var(--glass-bg-strong);
   border-block-end: var(--border-hairline) solid var(--color-border-subtle);
   font-size: var(--text-sm);
   color: var(--color-text-muted);
@@ -64,7 +64,7 @@
   padding-block: var(--space-3);
   border-end-start-radius: calc(var(--radius-md) - var(--border-hairline));
   border-end-end-radius: calc(var(--radius-md) - var(--border-hairline));
-  background-color: var(--color-code-bg);
+  background-color: var(--glass-code-bg);
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--text-sm);
@@ -98,7 +98,7 @@
   z-index: var(--z-sticky);
   padding-inline: var(--space-3);
   border-inline-end: var(--border-hairline) solid var(--color-border-subtle);
-  background-color: var(--color-code-bg);
+  background-color: var(--glass-code-bg);
   color: var(--color-text-muted);
   text-align: end;
   user-select: none;
@@ -137,6 +137,22 @@
   .action {
     flex: 1 1 0;
     min-inline-size: max-content;
+  }
+}
+
+@media (min-width: 64em) and (min-height: 45em) {
+  .viewer {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+
+  .region {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 

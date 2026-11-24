@@ -5,7 +5,7 @@ import { EyeIcon, FlameIcon } from '../../components/icons/icons';
 import { Panel } from '../../components/Panel';
 import { SealStrip } from '../../components/SealStrip';
 import { useNow } from '../../hooks/useNow';
-import { formatEncryptedSize, revealCostSentence, viewsLeftLabel } from '../../lib/format';
+import { revealCostSentence, viewsLeftLabel } from '../../lib/format';
 import type { RevealStep, SealedPeek } from './readState';
 import styles from './ReadRoute.module.css';
 
@@ -37,7 +37,6 @@ export function Interstitial({ peek, step, onReveal }: InterstitialProps) {
           items={[
             viewsLeftLabel(peek.remainingViews),
             <ExpiryTime key="expiry" expiresAt={peek.expiresAt} now={now} />,
-            `${formatEncryptedSize(peek.sizeBytes)} encrypted`,
           ]}
         />
       }
@@ -57,9 +56,7 @@ export function Interstitial({ peek, step, onReveal }: InterstitialProps) {
       >
         {lastView ? 'Reveal and destroy' : 'Reveal paste'}
       </Button>
-      <p className={styles.note}>
-        Decryption happens in this browser. The key in the link never reaches the server.
-      </p>
+      <p className={styles.note}>Decrypted in this browser. The key never reaches the server.</p>
     </Panel>
   );
 }

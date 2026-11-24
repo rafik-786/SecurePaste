@@ -3,46 +3,36 @@ import { describe, expect, it } from 'vitest';
 import { renderWithProviders } from '../test/render';
 import { Footer } from './Footer';
 import { Header } from './Header';
-import { Kbd } from './Kbd';
 
 describe('Header', () => {
-  it('holds the wordmark home link and the main navigation', () => {
+  it('holds only the wordmark home link and the theme toggle, with no navigation landmark', () => {
     renderWithProviders(<Header />);
 
     const banner = screen.getByRole('banner');
+    expect(within(banner).getAllByRole('link')).toHaveLength(1);
     expect(within(banner).getByRole('link', { name: 'SecurePaste' })).toHaveAttribute('href', '/');
-    const nav = within(banner).getByRole('navigation', { name: 'Main' });
-    expect(within(nav).getByRole('link', { name: 'About' })).toHaveAttribute('href', '/about');
-    expect(within(nav).getByRole('button', { name: 'Switch to dark theme' })).toBeInTheDocument();
-  });
-
-  it('marks About as the current page on /about only', () => {
-    const { unmount } = renderWithProviders(<Header />, '/about');
-    expect(screen.getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
-    unmount();
-
-    renderWithProviders(<Header />, '/');
-    expect(screen.getByRole('link', { name: 'About' })).not.toHaveAttribute('aria-current');
+    expect(
+      within(banner).getByRole('button', { name: 'Switch to light theme' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 });
 
 describe('Footer', () => {
   const SOURCE_URL = 'https://github.com/rafik-786/securepaste';
 
-  it('states where encryption happens', () => {
+  it('is not rendered at all when no source link is configured', () => {
     render(<Footer sourceUrl={undefined} />);
 
-    expect(
-      within(screen.getByRole('contentinfo')).getByText(
-        'Encrypted in your browser. The server only stores ciphertext.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });
 
-  it('renders no source link at all when none is configured', () => {
-    render(<Footer sourceUrl={undefined} />);
+  it('holds only the source link, with no sentence beside it', () => {
+    render(<Footer sourceUrl={SOURCE_URL} />);
 
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    const footer = screen.getByRole('contentinfo');
+    expect(within(footer).getAllByRole('link')).toHaveLength(1);
+    expect(footer).toHaveTextContent(/^Source code \(opens in a new tab\)$/);
   });
 
   it('opens the configured source link in a new tab without an opener or referrer', () => {
@@ -54,23 +44,17 @@ describe('Footer', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
-  it('ignores a source setting that is not a web address', () => {
+  it('is not rendered for a source setting that is not a web address', () => {
     render(<Footer sourceUrl="javascript:alert(1)" />);
 
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });
 
   it('reads the build-time setting by default', () => {
     render(<Footer />);
 
-    expect(Boolean(screen.queryByRole('link'))).toBe(Boolean(import.meta.env.VITE_SOURCE_URL));
-  });
-});
-
-describe('Kbd', () => {
-  it('renders a keyboard element', () => {
-    render(<Kbd>Ctrl+Enter</Kbd>);
-
-    expect(screen.getByText('Ctrl+Enter').tagName.toLowerCase()).toBe('kbd');
+    expect(Boolean(screen.queryByRole('contentinfo'))).toBe(
+      Boolean(import.meta.env.VITE_SOURCE_URL),
+    );
   });
 });

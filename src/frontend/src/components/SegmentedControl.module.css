@@ -21,7 +21,7 @@
   max-inline-size: 100%;
   border: var(--border-hairline) solid var(--color-border-strong);
   border-radius: var(--radius-md);
-  background-color: var(--color-surface);
+  background-color: var(--glass-bg-strong);
 }
 
 .segment {
@@ -51,7 +51,7 @@
   justify-content: center;
   min-block-size: var(--control-height-md);
   padding-inline: var(--space-4);
-  background-color: var(--color-surface);
+  background-color: transparent;
   color: var(--color-text);
   font-size: var(--text-md);
   line-height: var(--leading-snug);
@@ -74,7 +74,7 @@
 
 @media (hover: hover) {
   .segment:hover .input:not(:checked) + .face {
-    background-color: var(--color-surface-hover);
+    background-color: var(--glass-bg-hover);
   }
 }
 
@@ -83,7 +83,7 @@
 }
 
 .input:checked + .face {
-  background-color: var(--color-accent-tint);
+  background-color: color-mix(in srgb, var(--color-accent-tint) var(--glass-tint), transparent);
   color: var(--color-accent);
   box-shadow: inset 0 0 0 var(--border-thick) var(--color-accent);
 }
@@ -109,7 +109,7 @@
   }
 }
 
-@media (max-width: 40em) {
+@media (max-width: 40em), (min-width: 64em) and (min-height: 45em) {
   .segments {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

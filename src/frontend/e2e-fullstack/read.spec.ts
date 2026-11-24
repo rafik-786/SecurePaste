@@ -59,7 +59,7 @@ test('burn after reading: the copied link opens once in another browser, highlig
   const peek = readPeek(await (await peeked).json());
   expect(peek).toMatchObject({ remainingViews: 1, sizeBytes: expectedSize });
   await expect(reader.page.getByText('1 view left')).toBeVisible();
-  await expect(reader.page.getByText(`${expectedSize} bytes encrypted`)).toBeVisible();
+  await expect(reader.page.getByText(/bytes encrypted/)).toHaveCount(0);
   await reader.page.waitForLoadState('networkidle');
   expect(reader.count('POST', claimPath(paste.id))).toBe(0);
 
@@ -91,21 +91,21 @@ test('a 3-view paste counts down 3, 2, 1 across browsers and then is gone', asyn
   const content = 'SELECT 1;\n';
   const paste = await createPaste(author, { content, language: 'sql', views: 3 });
   await expect(author.page.getByText('3 views', { exact: true })).toBeVisible();
-  await expect(author.page.getByText('It can be opened 3 times, including by you.')).toBeVisible();
+  await expect(author.page.getByText('Anyone with this link can read it 3 times.')).toBeVisible();
 
   for (const { cost, button, after } of [
     {
-      cost: 'Revealing uses 1 of 3 remaining views.',
+      cost: 'Revealing uses 1 of 3 views.',
       button: 'Reveal paste',
       after: '2 views left',
     },
     {
-      cost: 'Revealing uses 1 of 2 remaining views.',
+      cost: 'Revealing uses 1 of 2 views.',
       button: 'Reveal paste',
       after: '1 view left',
     },
     {
-      cost: 'This is the last view. After you reveal it, the paste is destroyed.',
+      cost: 'This is the last view. Revealing it destroys the paste.',
       button: 'Reveal and destroy',
       after: 'That was the last view',
     },
@@ -237,7 +237,6 @@ test('a paste just under 256 KB after encryption round-trips; one byte over is s
   const peeked = reader.page.waitForResponse(isApiResponse('GET', pastePath(paste.id)));
   await reader.page.goto(paste.shareLink);
   expect(readPeek(await (await peeked).json()).sizeBytes).toBe(SIZE_LIMIT_BYTES - 1);
-  await expect(reader.page.getByText('255.9 KB encrypted')).toBeVisible();
   await reveal(reader, 'Reveal and destroy');
   await expect(
     reader.page.getByRole('region', { name: /^Paste content, Plain text/ }),
@@ -262,14 +261,17 @@ test('a 15-minute paste shows the expiry the server stored, in both the result a
 
   const acceptable = await author.page.evaluate(
     ({ instant, minute }) => {
-      const format = new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' });
+      const format = new Intl.DateTimeFormat('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
       return [instant - minute, instant, instant + minute].map((time) => format.format(time));
     },
     { instant: expiresAt, minute: MINUTE_MS },
   );
-  const line = author.page.getByText(/^Expires at .+, your local time\.$/);
+  const line = author.page.getByText(/^Expires \d{1,2} [A-Z][a-z]{2} \d{4}, /);
   const shown = (await line.textContent()) ?? '';
-  expect(acceptable.map((time) => `Expires at ${time}, your local time.`)).toContain(shown);
+  expect(acceptable.map((time) => `Expires ${time}`)).toContain(shown);
   await expect(author.page.getByText('Expires in 15 minutes')).toBeVisible();
 
   const reader = await visit();

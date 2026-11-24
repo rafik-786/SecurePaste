@@ -1,0 +1,32 @@
+.resultPage {
+  inline-size: 100%;
+  max-inline-size: 44rem;
+  margin-inline: auto;
+}
+
+@media (min-width: 64em) and (min-height: 45em) {
+  .formPage {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'heading heading'
+      'lead lead'
+      'editor options';
+    column-gap: var(--space-5);
+    inline-size: 100%;
+    max-inline-size: 80rem;
+    max-block-size: 46rem;
+    min-block-size: 0;
+    margin: auto;
+  }
+
+  .formPage > h1 {
+    grid-area: heading;
+  }
+
+  .resultPage {
+    margin-block: auto;
+  }
+}

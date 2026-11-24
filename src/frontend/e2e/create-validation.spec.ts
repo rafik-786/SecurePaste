@@ -27,7 +27,7 @@ for (const offset of [1, 4]) {
 
     await expect(content).toBeFocused();
     await expect(content).toHaveAttribute('aria-invalid', 'true');
-    await expect(page.getByText('Paste some text first.')).toBeVisible();
+    await expect(page.getByText('Add some text first.')).toBeVisible();
     expect(guard.apiCalls).toEqual([]);
   });
 }

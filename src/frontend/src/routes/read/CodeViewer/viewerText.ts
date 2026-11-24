@@ -2,8 +2,9 @@ import { DEFAULT_LANGUAGE, findLanguage, type LanguageId } from '../../../lib/la
 
 export const HIGHLIGHT_CHARACTER_LIMIT = 131_072;
 export const HIGHLIGHT_LINE_LIMIT = 10_000;
-export const SIZE_CAP_NOTE = 'Syntax highlighting is off for pastes over 128 KB.';
-export const LINE_CAP_NOTE = 'Syntax highlighting is off for lines over 10,000 characters.';
+export const SIZE_CAP_NOTE = "Syntax highlighting is off for this paste: it's too long.";
+export const LINE_CAP_NOTE =
+  'Syntax highlighting is off for this paste: a line is over 10,000 characters.';
 export const COPY_LABEL = 'Copy';
 export const COPIED_ANNOUNCEMENT = 'Paste copied to clipboard.';
 export const WRAP_LABEL = 'Wrap lines';

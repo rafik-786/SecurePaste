@@ -5,7 +5,6 @@ import { SIZE_LIMIT_LABEL } from '../../lib/format';
 import type { CreateFailure } from './useCreateSubmission';
 
 const TEXT_KEPT = 'Your text is still here.';
-const NO_DETAIL = 'The request was not valid.';
 
 export interface CreateFailureAlertProps {
   readonly failure: CreateFailure;
@@ -30,42 +29,33 @@ export function CreateFailureAlert({ failure, countdown, className }: CreateFail
     case 'validation':
       return (
         <Alert {...shared} variant="danger" title="The server rejected this paste">
-          <p>
-            {failure.detail !== undefined && failure.detail.trim() !== ''
-              ? failure.detail
-              : NO_DETAIL}
-          </p>
-          <p>{TEXT_KEPT}</p>
+          <p>Nothing was created. {TEXT_KEPT} Copy it, then reload the page and try again.</p>
         </Alert>
       );
     case 'too-large':
       return (
         <Alert {...shared} variant="danger" title="This paste is too large">
           <p>
-            The server accepts up to {SIZE_LIMIT_LABEL} after encryption. Shorten the text and try
-            again. {TEXT_KEPT}
+            The limit is {SIZE_LIMIT_LABEL} after encryption. {TEXT_KEPT} Shorten it and try again.
           </p>
         </Alert>
       );
     case 'network':
       return (
         <Alert {...shared} variant="danger" title="Could not reach the server">
-          <p>
-            Check your connection and try again. {TEXT_KEPT} If the request did reach the server,
-            that paste has no link anywhere and expires on its own.
-          </p>
+          <p>{TEXT_KEPT} Check your connection and try again.</p>
         </Alert>
       );
     case 'encrypt-failed':
       return (
         <Alert {...shared} variant="danger" title="This browser could not encrypt the paste">
-          <p>Nothing was sent. Try again. {TEXT_KEPT}</p>
+          <p>Nothing was sent. {TEXT_KEPT} Try again.</p>
         </Alert>
       );
     default:
       return (
         <Alert {...shared} variant="danger" title="The server hit an error">
-          <p>Try again in a moment. {TEXT_KEPT}</p>
+          <p>{TEXT_KEPT} Try again in a moment.</p>
         </Alert>
       );
   }
