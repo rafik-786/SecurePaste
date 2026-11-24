@@ -1,0 +1,42 @@
+.spinner {
+  display: inline-block;
+  flex-shrink: 0;
+  inline-size: 16px;
+  block-size: 16px;
+  border: var(--border-thick) solid var(--color-border-subtle);
+  border-block-start-color: currentColor;
+  border-radius: var(--radius-round);
+  animation: spin var(--duration-spin) var(--ease-linear) infinite;
+}
+
+.large {
+  inline-size: 24px;
+  block-size: 24px;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-block-size: calc(var(--text-md) * var(--leading-normal));
+  color: var(--color-text-secondary);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .spinner {
+    border-color: GrayText;
+    border-block-start-color: CanvasText;
+  }
+}

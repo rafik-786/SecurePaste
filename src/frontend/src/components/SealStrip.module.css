@@ -1,0 +1,80 @@
+.strip {
+  display: flex;
+  align-items: center;
+  min-block-size: 2.5rem;
+  padding-inline: var(--space-4);
+  border-start-start-radius: calc(var(--radius-md) - var(--border-hairline));
+  border-start-end-radius: calc(var(--radius-md) - var(--border-hairline));
+  background-color: color-mix(in srgb, var(--strip-tint) var(--glass-tint), transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Every item draws its rule on its leading edge, pulled 1px outside itself. The row clips that 1px,
+   so whichever item starts a line, the first one or one that wrapped, shows no rule. */
+.items {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  min-inline-size: 0;
+  margin-inline: calc(-1 * var(--space-3));
+  overflow: clip;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-inline-start: calc(-1 * var(--border-hairline));
+  padding-inline: var(--space-3) calc(var(--space-3) + var(--border-hairline));
+  border-inline-start: var(--border-hairline) solid var(--color-border-subtle);
+}
+
+.sealed {
+  --strip-tint: var(--color-accent-tint);
+
+  color: var(--color-accent);
+  border-block-end: var(--border-thick) dashed var(--color-accent);
+}
+
+.opened {
+  --strip-tint: var(--color-surface-sunken);
+
+  color: var(--color-text-secondary);
+  border-block-end: var(--border-hairline) solid var(--color-border-subtle);
+}
+
+.destroyed {
+  --strip-tint: var(--color-danger-tint);
+
+  color: var(--color-danger);
+  border-block-end: var(--border-thick) solid var(--color-danger);
+}
+
+.expired {
+  --strip-tint: var(--color-warning-tint);
+
+  color: var(--color-warning);
+  border-block-end: var(--border-thick) solid var(--color-warning);
+}
+
+@media (max-width: 40em) {
+  .strip {
+    padding-block: var(--space-2);
+  }
+
+  .items {
+    column-gap: var(--space-4);
+    margin-inline: 0;
+  }
+
+  .item {
+    margin-inline-start: 0;
+    padding-inline: 0;
+    border-inline-start: 0;
+  }
+}

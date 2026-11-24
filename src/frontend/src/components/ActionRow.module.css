@@ -1,0 +1,17 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 40em) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .row > * {
+    inline-size: 100%;
+  }
+}

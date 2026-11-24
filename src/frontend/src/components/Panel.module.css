@@ -1,0 +1,34 @@
+.panel {
+  border: var(--border-hairline) solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background-color: var(--glass-bg);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--glass-shadow);
+}
+
+.body {
+  padding: var(--space-5);
+}
+
+@media (max-width: 40em) {
+  .body {
+    padding: var(--space-4);
+  }
+
+  .fullBleed {
+    margin-inline: calc(-1 * var(--gutter));
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .fullBleed > :first-child {
+    border-radius: 0;
+  }
+}
+
+@media (max-width: 19.9375em) {
+  .body {
+    padding: var(--space-2);
+  }
+}

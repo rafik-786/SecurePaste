@@ -1,0 +1,76 @@
+.textArea {
+  --rows: 20;
+
+  display: block;
+  inline-size: 100%;
+  block-size: calc(
+    var(--rows) * var(--text-sm) * var(--leading-normal) + 2 * var(--space-3) + 2 *
+      var(--border-hairline)
+  );
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--glass-bg-strong);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-normal);
+  tab-size: 4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  resize: vertical;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.textArea::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .textArea:hover {
+    border-color: var(--color-text-secondary);
+  }
+}
+
+.textArea:focus {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.textArea:read-only {
+  background-color: var(--color-surface-sunken);
+}
+
+.textArea[aria-invalid='true'],
+.textArea[aria-invalid='true']:hover {
+  border-color: var(--color-danger);
+  box-shadow: inset 0 0 0 1px var(--color-danger);
+}
+
+@media (min-width: 40.0625em) and (max-width: 63.9375em) {
+  .textArea {
+    --rows: 16;
+  }
+}
+
+@media (max-width: 40em) {
+  .textArea {
+    --rows: 12;
+
+    block-size: calc(
+      var(--rows) * var(--text-md) * var(--leading-normal) + 2 * var(--space-3) + 2 *
+        var(--border-hairline)
+    );
+    font-size: var(--text-md);
+  }
+}
+
+@media (forced-colors: active) {
+  .textArea[aria-invalid='true'] {
+    border-width: var(--border-thick);
+  }
+}

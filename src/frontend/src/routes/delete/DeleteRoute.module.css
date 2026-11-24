@@ -1,0 +1,27 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.confirmBody {
+  min-block-size: 11.5rem;
+}
+
+.actions {
+  margin-block-start: var(--space-5);
+}
+
+@media (max-width: 40em) {
+  .confirmBody {
+    min-block-size: 18rem;
+  }
+}
+
+@media (min-width: 64em) and (min-height: 45em) {
+  .page {
+    inline-size: 100%;
+    max-inline-size: var(--content-max);
+    margin-inline: auto;
+  }
+}

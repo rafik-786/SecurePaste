@@ -1,0 +1,54 @@
+.wrapper {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+}
+
+.select {
+  display: block;
+  inline-size: 100%;
+  block-size: var(--control-height-md);
+  padding: 0 2.25rem 0 var(--space-3);
+  border: var(--border-hairline) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--glass-bg-strong);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  appearance: none;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .select:hover {
+    border-color: var(--color-text-secondary);
+  }
+}
+
+.select:focus {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.select[aria-invalid='true'],
+.select[aria-invalid='true']:hover {
+  border-color: var(--color-danger);
+  box-shadow: inset 0 0 0 1px var(--color-danger);
+}
+
+.chevron {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--space-3);
+  translate: 0 -50%;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+@media (pointer: coarse) {
+  .select {
+    block-size: var(--control-height-touch);
+  }
+}

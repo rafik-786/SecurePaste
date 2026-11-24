@@ -1,0 +1,260 @@
+:root {
+  color-scheme: dark;
+
+  --color-bg: #0b1120;
+  --color-surface: #131c2e;
+  --color-surface-hover: #1a2539;
+  --color-surface-sunken: #0e1626;
+  --color-code-bg: #0e1626;
+  --color-border-subtle: #223047;
+  --color-border-strong: #64748b;
+  --color-text: #f1f5f9;
+  --color-text-secondary: #cbd5e1;
+  --color-text-muted: #94a3b8;
+  --color-text-disabled: #475569;
+  --color-accent: #fb923c;
+  --color-accent-hover: #fdba74;
+  --color-accent-tint: #2b1608;
+  --color-focus: #f1f5f9;
+  --color-primary-bg: #f97316;
+  --color-primary-bg-hover: #fb923c;
+  --color-primary-bg-active: #ea580c;
+  --color-on-primary: #0b1120;
+  --color-success: #4ade80;
+  --color-success-tint: #0f2a1d;
+  --color-success-border: #166534;
+  --color-warning: #facc15;
+  --color-warning-tint: #2a2408;
+  --color-warning-border: #713f12;
+  --color-danger: #f87171;
+  --color-danger-hover: #fca5a5;
+  --color-danger-active: #fecaca;
+  --color-on-danger: #0b1120;
+  --color-danger-tint: #2a1215;
+  --color-danger-border: #7f1d1d;
+  --color-info: #60a5fa;
+  --color-info-tint: #112240;
+  --color-info-border: #1e3a8a;
+  --color-selection: #4a2a12;
+
+  --syntax-comment: #8b98ad;
+  --syntax-keyword: #c4a5ff;
+  --syntax-string: #86efac;
+  --syntax-number: #f9a8d4;
+  --syntax-function: #93c5fd;
+  --syntax-type: #67e8f9;
+  --syntax-attribute: #fcd34d;
+  --syntax-tag: #fda4af;
+  --syntax-meta: #a5b4fc;
+  --syntax-addition: #86efac;
+  --syntax-addition-bg: #0f2a1d;
+  --syntax-deletion: #fca5a5;
+  --syntax-deletion-bg: #2a1215;
+
+  --shadow-skip-link: 0 2px 8px rgba(0, 0, 0, 0.6);
+  --shadow-primary-glow: 0 4px 24px rgba(249, 115, 22, 0.45);
+
+  --glass-bg: rgba(19, 28, 46, 0.55);
+  --glass-bg-strong: rgba(14, 22, 38, 0.72);
+  --glass-bg-hover: rgba(26, 37, 57, 0.82);
+  --glass-code-bg: rgba(14, 22, 38, 0.94);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --glass-tint: 72%;
+  --glass-blur: 16px;
+  --glass-filter: blur(var(--glass-blur)) saturate(140%);
+
+  --glow-warm: rgba(249, 115, 22, 0.32);
+  --glow-rose: rgba(251, 113, 133, 0.26);
+  --glow-cool: rgba(99, 102, 241, 0.22);
+
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --text-xs: 0.79rem;
+  --text-sm: 0.889rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.424rem;
+  --text-2xl: 1.602rem;
+  --text-3xl: 1.802rem;
+
+  --weight-regular: 400;
+  --weight-semibold: 600;
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --tracking-tight: -0.011em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-round: 50%;
+  --border-hairline: 1px;
+  --border-thick: 2px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-spin: 900ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-linear: linear;
+
+  --z-backdrop: -1;
+  --z-base: 0;
+  --z-sticky: 1;
+  --z-skip-link: 100;
+
+  --content-max: 64rem;
+  --prose-max: 40rem;
+  --shell-max: var(--content-max);
+  --header-height: 3.5rem;
+  --gutter: 2rem;
+  --control-height-sm: 2rem;
+  --control-height-md: 2.5rem;
+  --control-height-lg: 3rem;
+  --control-height-touch: 2.75rem;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-sunken: #eef2f7;
+  --color-code-bg: #f3f6fa;
+  --color-border-subtle: #e2e8f0;
+  --color-border-strong: #64748b;
+  --color-text: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #556274;
+  --color-text-disabled: #94a3b8;
+  --color-accent: #c2410c;
+  --color-accent-hover: #9a3412;
+  --color-accent-tint: #ffedd5;
+  --color-focus: #0f172a;
+  --color-primary-bg: #c2410c;
+  --color-primary-bg-hover: #9a3412;
+  --color-primary-bg-active: #7c2d12;
+  --color-on-primary: #ffffff;
+  --color-success: #15803d;
+  --color-success-tint: #dcfce7;
+  --color-success-border: #86efac;
+  --color-warning: #854d0e;
+  --color-warning-tint: #fef9c3;
+  --color-warning-border: #fde047;
+  --color-danger: #b91c1c;
+  --color-danger-hover: #991b1b;
+  --color-danger-active: #7f1d1d;
+  --color-on-danger: #ffffff;
+  --color-danger-tint: #fee2e2;
+  --color-danger-border: #fca5a5;
+  --color-info: #1d4ed8;
+  --color-info-tint: #dbeafe;
+  --color-info-border: #93c5fd;
+  --color-selection: #fed7aa;
+
+  --syntax-comment: #556274;
+  --syntax-keyword: #7c3aed;
+  --syntax-string: #15803d;
+  --syntax-number: #be185d;
+  --syntax-function: #1d4ed8;
+  --syntax-type: #0e7490;
+  --syntax-attribute: #a16207;
+  --syntax-tag: #be123c;
+  --syntax-meta: #475569;
+  --syntax-addition: #15803d;
+  --syntax-addition-bg: #dcfce7;
+  --syntax-deletion: #b91c1c;
+  --syntax-deletion-bg: #fee2e2;
+
+  --shadow-skip-link: 0 2px 8px rgba(15, 23, 42, 0.18);
+  --shadow-primary-glow: 0 4px 20px rgba(194, 65, 12, 0.3);
+
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-bg-hover: rgba(241, 245, 249, 0.9);
+  --glass-code-bg: rgba(243, 246, 250, 0.94);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06), 0 8px 32px rgba(15, 23, 42, 0.08);
+  --glass-tint: 72%;
+
+  --glow-warm: rgba(253, 186, 116, 0.5);
+  --glow-rose: rgba(253, 164, 175, 0.4);
+  --glow-cool: rgba(199, 210, 254, 0.45);
+}
+
+/* The opaque family stands in for glass where the browser cannot blur, where the reader asked for
+   less transparency, and in forced colours. The two blocks are the same on purpose: an @media rule
+   cannot test for a missing CSS feature, and a "not reduce" query would be false in every browser
+   that does not know prefers-reduced-transparency, which would drop glass for all of them. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root,
+  :root[data-theme='light'] {
+    --glass-bg: var(--color-surface);
+    --glass-bg-strong: var(--color-code-bg);
+    --glass-bg-hover: var(--color-surface-hover);
+    --glass-code-bg: var(--color-code-bg);
+    --glass-border: var(--color-border-subtle);
+    --glass-tint: 100%;
+    --glass-filter: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  :root,
+  :root[data-theme='light'] {
+    --glass-bg: var(--color-surface);
+    --glass-bg-strong: var(--color-code-bg);
+    --glass-bg-hover: var(--color-surface-hover);
+    --glass-code-bg: var(--color-code-bg);
+    --glass-border: var(--color-border-subtle);
+    --glass-tint: 100%;
+    --glass-filter: none;
+  }
+}
+
+@media (max-width: 40em) {
+  :root {
+    --gutter: 1rem;
+  }
+}
+
+@media (max-width: 19.9375em) {
+  :root {
+    --gutter: 0.5rem;
+  }
+}
+
+@media (min-width: 40.0625em) and (max-width: 63.9375em) {
+  :root {
+    --gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 64em) and (min-height: 45em) {
+  :root {
+    --shell-max: 90rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+  }
+}

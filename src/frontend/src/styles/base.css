@@ -1,0 +1,259 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+  /* JetBrains Mono draws != as one not-equal sign and -> as an arrow; a paste must show its real characters. */
+  font-variant-ligatures: none;
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color var(--duration-base) var(--ease-standard),
+    color var(--duration-base) var(--ease-standard);
+}
+
+/* Glass is invisible over a flat colour, so soft glows sit behind every page. Fixed to the viewport,
+   so they never add scroll length. The layer is twice the viewport so its transparent edges stay off
+   screen while it moves. It moves only as one rigid piece, so the glows never pass over each other:
+   check-contrast.mjs tests each glow centre alone, and an overlap fails it. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -50%;
+  z-index: var(--z-backdrop);
+  background-image:
+    radial-gradient(37.5% 37.5% at 32.5% 30%, var(--glow-warm), transparent 70%),
+    radial-gradient(32.5% 32.5% at 70% 70%, var(--glow-rose), transparent 70%),
+    radial-gradient(27.5% 27.5% at 67.5% 32.5%, var(--glow-cool), transparent 70%);
+  pointer-events: none;
+  animation:
+    glow-sway 17s ease-in-out infinite alternate,
+    glow-breathe 11s ease-in-out infinite alternate,
+    glow-drift 13s ease-in-out infinite alternate;
+}
+
+@keyframes glow-sway {
+  from {
+    rotate: -12deg;
+  }
+
+  to {
+    rotate: 12deg;
+  }
+}
+
+@keyframes glow-breathe {
+  from {
+    scale: 1;
+  }
+
+  to {
+    scale: 1.15;
+  }
+}
+
+@keyframes glow-drift {
+  from {
+    translate: -4% 3%;
+  }
+
+  to {
+    translate: 4% -3%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+}
+
+/* Only large containers blur. Controls inside them get a translucent fill and no blur of their own,
+   because every blurred layer is another full repaint on a phone. */
+.glass {
+  -webkit-backdrop-filter: var(--glass-filter);
+  backdrop-filter: var(--glass-filter);
+}
+
+#root {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
+/* App mode: the shell is exactly one screen tall and the document never scrolls. Whatever can grow
+   scrolls inside its own named container. */
+@media (min-width: 64em) and (min-height: 45em) {
+  #root {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    block-size: 100dvh;
+  }
+}
+
+h1,
+h2,
+h3,
+p,
+li,
+dt,
+dd,
+th,
+td {
+  overflow-wrap: break-word;
+}
+
+h1 {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+h2 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-tight);
+}
+
+@media (max-width: 40em) {
+  h1 {
+    font-size: var(--text-xl);
+  }
+}
+
+/* Headings, alerts and main take focus only from script; a ring there boxes text nobody can act on. */
+[tabindex='-1']:not(a, button, input, select, textarea, summary):focus {
+  outline: none;
+}
+
+img,
+picture,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+ol,
+ul {
+  padding-inline-start: var(--space-5);
+}
+
+table {
+  border-collapse: collapse;
+}
+
+/* Zero specificity: a component class on a link, such as a link styled as a button, wins in every state. */
+:where(a) {
+  color: var(--color-accent);
+  text-decoration-line: underline;
+  text-decoration-thickness: from-font;
+  text-underline-offset: 0.15em;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  :where(a:hover) {
+    color: var(--color-accent-hover);
+  }
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+::selection {
+  background-color: var(--color-selection);
+  color: var(--color-text);
+}
+
+code,
+kbd,
+samp,
+pre,
+time {
+  font-variant-numeric: tabular-nums;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+  font-size: 1em;
+}
+
+noscript p {
+  max-width: var(--prose-max);
+  margin: var(--space-6) auto;
+  padding-inline: var(--gutter);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-transparency: reduce), (forced-colors: active) {
+  body::before {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+  }
+
+  ::selection {
+    background-color: Highlight;
+    color: HighlightText;
+  }
+
+  svg {
+    forced-color-adjust: auto;
+  }
+}
