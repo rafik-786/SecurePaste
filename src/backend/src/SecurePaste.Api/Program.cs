@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using SecurePaste.Api;
 using SecurePaste.Modules.Pastes;
@@ -14,6 +15,16 @@ builder.WebHost.ConfigureKestrel(kestrel =>
     kestrel.Limits.MaxRequestBodySize = PasteLimits.MaxHttpRequestBytes);
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<ForwardedHeadersOptions>(forwarded =>
+{
+    forwarded.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
+    var trustedProxyNetworks =
+        builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [];
+    foreach (var network in trustedProxyNetworks)
+    {
+        forwarded.KnownNetworks.Add(IPNetwork.Parse(network));
+    }
+});
 builder.Services.AddHealthChecks().AddDbContextCheck<PastesDbContext>("database");
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -44,6 +55,9 @@ builder.Services.AddRateLimiter(limiter =>
 
 var app = builder.Build();
 
+// Before the rate limiter, which buckets requests by client address: behind the proxy every
+// request would otherwise come from the proxy and share one bucket.
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseRateLimiter();
 
