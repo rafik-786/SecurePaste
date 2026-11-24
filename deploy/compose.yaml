@@ -1,0 +1,80 @@
+name: securepaste
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securepaste
+      POSTGRES_USER: securepaste
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    command:
+      ["postgres", "-c", "shared_buffers=64MB", "-c", "max_connections=30"]
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U securepaste -d securepaste"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 256m
+    networks: [app]
+
+  migrate:
+    build:
+      context: ../src/backend
+      target: migrator
+    command:
+      [
+        "--connection",
+        "Host=db;Database=securepaste;Username=securepaste;Password=${POSTGRES_PASSWORD}",
+      ]
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [app]
+
+  api:
+    build:
+      context: ../src/backend
+      target: api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Database: "Host=db;Database=securepaste;Username=securepaste;Password=${POSTGRES_PASSWORD};Maximum Pool Size=10"
+      ForwardedHeaders__KnownNetworks__0: 172.30.0.0/24
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    mem_limit: 384m
+    networks: [app]
+
+  web:
+    build:
+      context: ../src/frontend
+      args:
+        VITE_SOURCE_URL: https://github.com/rafik-786/SecurePaste
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [api]
+    mem_limit: 128m
+    networks: [app]
+
+networks:
+  app:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  db-data:
+  caddy-data:
+  caddy-config:
