@@ -3,9 +3,7 @@
 The single-page application (SPA) for SecurePaste. It encrypts every paste in
 the browser with AES-256-GCM (Advanced Encryption Standard, Galois/Counter
 Mode) through the Web Crypto API, puts the key in the URL fragment, and only
-ever sends ciphertext to the API. The design contract is
-[docs/design/07-frontend.md](../../docs/design/07-frontend.md); the crypto
-scheme is [docs/design/05-crypto.md](../../docs/design/05-crypto.md).
+ever sends ciphertext to the API.
 
 Stack: React 19, TypeScript in strict mode, Vite 8, React Router 7
 (declarative mode), highlight.js for syntax highlighting, CSS (Cascading Style
@@ -42,7 +40,7 @@ npm ci
 | `npm run coverage`           | the same with coverage; `src/lib` and `src/api` must stay at 90% of lines or more                                                                                                  |
 | `npm run test:e2e`           | end-to-end tests against the production build, API mocked, content security policy live; includes the accessibility scan (axe, Web Content Accessibility Guidelines (WCAG) 2.2 AA) |
 | `npm run test:e2e:fullstack` | end-to-end tests against the real API and database (opt-in, setup below)                                                                                                           |
-| `npm run check:budget`       | bundle sizes against the performance budget in the design doc; needs a build first                                                                                                 |
+| `npm run check:budget`       | bundle sizes against the performance budget; needs a build first                                                                                                                   |
 | `npm run check:contrast`     | text and border contrast on every glass surface, over the plain page and over each glow, read from `src/styles/tokens.css`                                                         |
 
 The proxy target defaults to `http://localhost:5000`. Override it with
@@ -98,7 +96,7 @@ running it twice within one minute is fine and a third run gets 429 responses.
 | ---------------------- | ---------------------------------------------------------------------------------------------------- |
 | `src/lib`              | pure logic: crypto, strict base64, payload, limits, time and size formatting, the highlighter loader |
 | `src/api`              | the typed API client and its mapping of RFC 9457 (Request for Comments) problem responses            |
-| `src/components`       | the shared component set from the design doc                                                         |
+| `src/components`       | the shared component set                                                                             |
 | `src/hooks`            | announcer, focus, countdown, request timeout, leave guard                                            |
 | `src/routes`           | one folder per route; `shared` holds what more than one route uses                                   |
 | `src/styles`           | design tokens, base styles, the backdrop glows and the shared glass class                            |

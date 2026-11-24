@@ -185,7 +185,7 @@ try {
     console.error(`\nBundle budget exceeded: ${over.map(({ item }) => item).join('; ')}.`);
     process.exitCode = 1;
   } else {
-    console.log('\nEvery budget from docs/design/07-frontend.md holds.');
+    console.log('\nEvery budget holds.');
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
