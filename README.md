@@ -71,6 +71,8 @@ script choose what runs.
 On other systems, follow the manual steps in
 [src/frontend/README.md](src/frontend/README.md#running-against-the-real-backend).
 
+To run it on a server, see [deploy/README.md](deploy/README.md).
+
 ## Tests
 
 Backend, from `src/backend` (Docker must be running, because the
